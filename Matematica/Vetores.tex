@@ -1,0 +1,484 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{geometry}
+\geometry{left=3cm, right=2cm, top=3cm, bottom=2cm}
+\usepackage[portuguese,brazil]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{multicol}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{pgfplots}
+\usepackage{calc}
+\usepackage{listings}
+
+\usepackage{xcolor} % necessário para cores
+
+\definecolor{codeback}{RGB}{245,245,248}
+\definecolor{string}{RGB}{0,120,0}
+\definecolor{keyword}{RGB}{0,0,180}
+\definecolor{comment}{RGB}{120,120,120}
+\definecolor{number}{RGB}{180,0,0}
+
+\lstset{
+    backgroundcolor=\color{codeback},
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{keyword}\bfseries,
+    stringstyle=\color{string},
+    commentstyle=\color{comment}\itshape,
+    numberstyle=\tiny\color{gray},
+    numbers=left,
+    numbersep=10pt,
+    stepnumber=1,
+    showspaces=false,
+    showstringspaces=false,
+    tabsize=4,
+    frame=single,
+    frameround=tttt,
+    rulecolor=\color{black!30},
+    breaklines=true,
+    breakatwhitespace=true,
+    captionpos=b,
+    abovecaptionskip=10pt,
+    belowcaptionskip=10pt,
+    xleftmargin=15pt,
+    xrightmargin=10pt,
+    columns=flexible,
+    keepspaces=true,
+    escapeinside={(*@}{@*)} % permite LaTeX dentro do código
+}
+
+% Estilo específico para Python
+\lstdefinestyle{python}{
+    language=Python,
+    morekeywords={*,import,as,from,None,True,False,self,np},
+    emph={array,arange,sum,mean,std,max,min,dot,cross,sin,exp,log},
+    emphstyle=\color{blue}\bfseries
+}
+
+% Estilo específico para C#
+\lstdefinestyle{csharp}{
+    language=[Sharp]C,
+    morekeywords={using,var,new,public,private,static,void,double,float,int,bool},
+    emph={Array,List,Enumerable,Range,Select,Sum,Average},
+    emphstyle=\color{blue}\bfseries
+}
+
+\pgfplotsset{compat=1.18}
+\numberwithin{equation}{section}
+
+\title{Revisão e Notas sobre Vetores}
+\author{Pedro Rupf Pereira Viana}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\section{Introdução e Objetivos}
+
+Trata-se de uma revisão teórica e expositiva sobre vetores e suas definições fundamentais no plano cartesiano, e suas aplicações na matemática, física e na programação.
+
+\section{Desenvolvimento}
+
+Consideremos o plano cartesiano em um sistema de coordenadas em $\mathbb{R}^{2}$, formado por um par de retas ortogonais. Fixada uma unidade de comprimento, 
+qualquer ponto $P$ do plano pode ser identificado pelo par ordenado $(a,b) \in \mathbb{R}^2$, onde $a$ é a abscissa e $b$ é a ordenada.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    axis lines = middle,
+    xlabel = {$x$},
+    ylabel = {$y$},
+    xmin=-1, xmax=2,
+    ymin=-1, ymax=2,
+    xtick={-1,0,1,2},
+    ytick={-1,0,1,2},
+    grid=both,
+    minor tick num=1,
+    grid style={dashed, gray!40},
+    width=6cm,
+    height=6cm,
+]
+
+\draw[->, thick] (axis cs:0,0) -- (axis cs:1.4,0);
+\draw[->, thick] (axis cs:0,0) -- (axis cs:0,1.4);
+
+\addplot[mark=*, mark size=3.5pt, mark options={fill=black, draw=black}]
+    coordinates {(1,1)}
+    node[above right, font=\small] {$P(a,b)$};
+
+\draw[dashed, gray!70] (1,0) -- (1,1);
+\draw[dashed, gray!70] (0,1) -- (1,1);
+
+\end{axis}
+\end{tikzpicture}
+\caption{Representação do ponto $P(a,b)$ no primeiro quadrante do plano cartesiano.}
+\label{fig:ponto_P}
+\end{figure}
+
+Desta forma, dados dois pontos $P$ e $Q$ do plano, adotando $Q(0,0)$ (isto é, a origem do plano cartesiano), podemos considerar que o segmento de reta 
+$\overrightarrow{QP}$, com ponto inicial $Q$ e ponto final $P$. Note que embora como conjunto de pontos os segmentos $\overrightarrow{QP}$ e $\overrightarrow{PQ}$ 
+sejam iguais, como segmentos orientados eles são distintos, onde chamamos estes vetores de segmentos opostos.
+
+Passemos a considerar, à partir de agora, apenas segmentos orientados com ponto inicial na origem, denominados \textit{vetores no plano}. É importante notar que 
+vetores no plano são determinados exclusivamente pelo seu ponto final, pois o ponto inicial é fixo na origem. Assim, para cada ponto no plano $P(a,b)$, está associado
+um único vetor $\textbf{v} = \overrightarrow{OP}$. Usando esta correspondência entre pontos e vetores, podemos representar o vetor $\textbf{v} = \overrightarrow{OP}$ 
+pela identificação $\textbf{v} = (1,3)$, ou ainda pela notação matriz-coluna $\textbf{v} = \begin{bmatrix} 1 \\ 3 \end{bmatrix}$. Observe que, deste modo, à origem 
+do plano, ficará associado um vetor que têm os pontos inicial e final coincidentes com esta. Denominaremos este vetor (que, na verdade, é apenas um ponto) de 
+\textit{vetor nulo}, sendo representado por $(0,0)$.
+
+O oposto de um vetor $\textbf{v} = \overrightarrow{OP}$ é o vetor $\textbf{w} = \overrightarrow{OQ}$, que possui o mesmo comprimento que $\textbf{v}$, porém com 
+direção oposta. Em termos de coordenadas, se $\textbf{v} = (a,b)$, então $\textbf{w} = (-a,-b)$ e, por essa razão, denota-se que $\textbf{w} = -\textbf{v}$.
+
+\subsection{Operações com vetores no plano}
+
+\subsubsection{Multiplicação de um vetor por um número}
+
+Multiplicar um vetor $\textbf{v}$ por um número real $k > 0$ é considerar um novo vetor $k\textbf{w} = kv$, que possui a mesma direção de $\textbf{v}$ e têm como 
+comprimento $k$ vezes o comprimento de $\textbf{v}$. Se $k < 0$, o vetor $\textbf{w} = kv$ terá direção oposta à de $\textbf{v}$ e comprimento $|k|$ vezes o 
+comprimento de $\textbf{v}$. Se $k = 0$, o vetor resultante $\textbf{w} = kv$ será o vetor nulo.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    axis lines = middle,
+    xlabel = {$x$},
+    ylabel = {$y$},
+    xmin=-1, xmax=3,
+    ymin=-1, ymax=3,
+    xtick={-1,0,1,2},
+    ytick={-1,0,1,2},
+    grid=both,
+    minor tick num=1,
+    grid style={dashed, gray!40},
+    width=6cm,
+    height=6cm,
+]
+
+% Desenhando os vetores
+\draw[->, thick, red] (axis cs:0,0) -- (axis cs:2,2);  % Vetor w = 2v
+\draw[->, thick, black] (axis cs:0,0) -- (axis cs:1,1);  % Vetor v
+\draw[->, thick, blue] (axis cs:0,0) -- (axis cs:-0.5,-0.5);  % Vetor t = -0.5v
+
+% Linhas de projeção do ponto
+\draw[dashed, gray!70] (1,0) -- (1,1);
+\draw[dashed, gray!70] (0,1) -- (1,1);
+
+\end{axis}
+\end{tikzpicture}
+\caption{Representação dos vetores \( \mathbf{v} \), \( \mathbf{w} = 2\mathbf{v} \), e \( \mathbf{t} = -0.5\mathbf{v} \) no plano cartesiano.}
+\label{fig:vetores}
+\end{figure}
+
+\subsubsection{Adição de dois vetores}
+
+Para introduzir a soma de dois vetores, consideremos um exemplo de duas forças atuando sobre um corpo, representadas pelos vetores $\mathbf{F}_1$ e $\mathbf{F}_2$, 
+conforme podemos ver na Figura 3 abaixo:
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+    thick,
+    >=stealth,
+    force/.style={->, red, very thick},
+    res/.style={->, green!60!black, very thick}
+  ]
+
+% --- Superfície (chão) ---
+\draw[line width=3pt] (-4,0) -- (4,0);
+
+% --- Bloco: retângulo com sombra ---
+\fill[gray!40, opacity=0.4] (-1.4,0.1) rectangle (1.4,1.6);
+\draw[fill=cyan!30, draw=black, line width=1.2pt]
+      (-1.4,0.1) rectangle (1.4,1.6);
+
+% hachuras no chão (apoio)
+\foreach \x in {-3.8,-3.3,...,3.8}
+   \draw[gray] (\x,0) -- ++(0,-0.2);
+
+% --- Centro do bloco (exatamente no meio) ---
+\coordinate (O) at (0, 0.85);
+
+% --- Forças ---
+% F1: paralela ao plano (horizontal)
+\draw[force] (O) -- ++(0:3.5cm) node[right] {$\mathbf{F_1}$};
+
+% F2: inclinada, formando α com F1 (ex: 55°)
+\draw[force] (O) -- ++(55:3.8cm) node[above left=3pt] {$\mathbf{F_2}$};
+
+% --- Ângulo α entre F1 e F2 (sempre < 90°) ---
+\draw[blue, thick]
+      (O) ++(0:1.3cm) arc[start angle=0, end angle=55, radius=1.3cm];
+
+% --- Resultante (regra do paralelogramo) ---
+\draw[res, dashed] (O) -- ++(27:4.8cm) node[above right] {$\mathbf{F_R}$};
+
+% --- Legenda ---
+\node[font=\small] at (0,-0.7) {superfície};
+
+\end{tikzpicture}
+\caption{Bloco sobre uma superfície sujeito a duas forças: $\mathbf{F_1}$ paralela ao plano e $\mathbf{F_2}$ formando ângulo $\alpha < 90^\circ$ com $\mathbf{F_1}$. 
+A força resultante $\mathbf{F_R}$ é obtida pela regra do paralelogramo.}
+\label{fig:forcas_bloco_retangulo}
+\end{figure}
+
+Uma força que atua num ponto pode ser representada por um vetor, de comprimento igual à intensidade da força, com a mesma direção e sentido desta força. Supondo agora 
+que as duas forças $\mathbf{F}_1$ e $\mathbf{F}_2$, representadas na FIgura 3, atuem simultaneamente sobre o corpo apresentado nesta mesma figura. Podemos representar 
+o resultado destas duas forças por uma única força $\mathbf{F_R}$?
+
+Ora, podemos representar que a força resultante $\mathbf{F_R}$ é obtida pelo vetor diagonal do paralelogramo construído a partir dos vetores $\mathbf{F_1}$ e 
+$\mathbf{F_2}$, chamando esta operação de soma de vetores, onde escrevemos $\mathbf{F_R} = \mathbf{F_1} + \mathbf{F_2}$. De acordo com a Figura 4 abaixo, temos que 
+$\vec{R} = \vec{v} + \vec{u}$.
+
+\begin{figure}[h]
+		\centering
+		\includegraphics[width=7cm]{image-5.png}
+		\caption{Regra do paralelogramo aplicada à soma de vetores.}
+\end{figure}
+
+\subsubsection{Vetores no espaço}
+
+Da mesma forma que é definido vetores em um espaço em $\mathbb{R}^{2}$, podemos definir vetores em um espaço tridimensional, ou seja, em $\mathbb{R}^{3}$. Neste caso, 
+um ponto $P$ do espaço é identificado por um triplo ordenado $(a,b,c)$, onde temos um sistema de coordenadas formado por três retas ortogonais entre si. Assim, um 
+vetor são dados por um segmento orientado com ponto inicial na origem e ponto final em $P(a,b,c)$, representado por $\textbf{v} = (a,b,c)$.
+
+\begin{figure}[h]
+		\centering
+		\includegraphics[width=8cm]{002.png}
+		\caption{Vetor genérico $\textbf{v} = (2,4,3)$, representado no espaço em $\mathbb{R}^{3}$.}
+\end{figure}
+
+\subsubsection{Operações com vetores no espaço}
+
+A soma de dois vetores, e o produto de um vetor por um número real $k$ em $\mathbb{R}^{3}$ também são da mesma forma que no plano. Isto é, se 
+$\mathbf{u} = ({x}_1 + {x}_2 + {x}_3)$ e $\mathbf{w} = ({y}_1 + {y}_2 + {y}_3)$, então a soma dos vetores é dada por:
+
+\begin{eqnarray}
+	\mathbf{u} + \mathbf{w} = (x_1 + y_1, x_2 + y_2, x_3 + y_3)
+\end{eqnarray}
+
+\begin{eqnarray}
+	k\mathbf{u} = (kx_1, kx_2, kx_3)
+\end{eqnarray}
+
+Por exemplo, se $\mathbf{u} = (2,-3,5)$ e $\mathbf{v} = (1,2,0)$, então $\mathbf{u} + \mathbf{w} = (3,-1,5)$, e $2\mathbf{u} = (4,-6,10)$.
+
+Como já observamos no caso do plano, estas operações correspondem exatamente às respectivas operações das matrizes linha que representam os vetores, e gozam de uma 
+série de propriedades decorrentes daquelas relativas às operações com números reais.
+
+\subsubsection{Propriedades vetoriais}
+
+\begin{multicols}{2}
+    \begin{itemize}
+        \item $(\mathbf{u} + \mathbf{v}) + \mathbf{w} = \mathbf{u} + (\mathbf{v} + \mathbf{w})$
+        \item $\mathbf{u} + \mathbf{v} = \mathbf{v} + \mathbf{u}$
+        \item Existe $\mathbf{0}$ $\in$ $V$ tal que $\mathbf{u} + \mathbf{0} = \mathbf{u}$
+        \item Existe $-\mathbf{u}$ $\in$ $V$ tal que $\mathbf{u} + (-\mathbf{u}) = \mathbf{0}$
+    \end{itemize}
+    \columnbreak
+    \begin{itemize}
+        \item $a(\mathbf{u} + \mathbf{v}) = a\mathbf{u} + a\mathbf{v}$
+        \item $(a + b)\mathbf{v} = a\mathbf{v} + b\mathbf{v}$
+        \item $(ab)\mathbf{v} = a(b\mathbf{v})$
+        \item $1\mathbf{u} = \mathbf{u}$
+    \end{itemize}
+\end{multicols}
+
+\section{Ok...e onde isso se aplica na programação?}
+
+Um \textbf{vetor} é uma estrutura de dados que armazena uma coleção \textbf{ordenada} de elementos do mesmo tipo (ou tipos compatíveis), acessíveis por meio de um 
+\textbf{índice numérico}. Em termos matemáticos, um vetor é uma grandeza com magnitude e direção; na programação, ele representa uma \textbf{sequência indexada} de 
+valores.
+
+Em linguagens de baixo nível como C ou C++, vetores são implementados como \textbf{arrays} estáticos (tamanho fixo na memória). Em C$\#$ e em Python, o conceito de vetor 
+é mais flexível e geralmente representado por \textbf{Lists} (ou Arrays, no caso do C$\#$), ou também por Lists e pela biblioteca \textbf{NumPy} (que oferece verdadeiros 
+arrays n-dimensionais otimizados).
+
+\subsection{Uso de vetores em Python - Lists VS NumPy Array}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+
+\textbf{Características} & \textbf{List - Python Nativo} & \textbf{numpy.array} \\ \hline
+Tipagem & heterogênea & Homogênea (mesmo tipo) \\ \hline
+Performance & Lenta para op. numéricas & Muito rápida (Usam C/Fortran) \\ \hline
+Tamanho fixo? & Dinâmico & Fixo após criação \\ \hline
+Operações matemáticas & Manual (loops) & Vetorizadas (element-wise) \\ \hline
+Consumo de memória & Alto & Baixo \\ \hline
+
+\end{tabular}
+\caption{Resumo comparativo entre listas nativas do Python e arrays da biblioteca NumPy.}
+\end{table}
+
+Tal como no C$\#$, em Python podemos usar listas (list) para representar vetores, possuíndo operações básicas como acesso por índice, modificação de elementos, soma e 
+multiplicação por escalar, além de apresentar uma alta e excelente versatilidade de uso (principalmente quando nos vemos em cenários onde um determinado objeto pode 
+receber um número elevado de registros, como por exemplo, um paciente que possui em seu pedido médico 80 exames). Utilizo este exemplo pois é um caso real que já me 
+deparei em meu dia a dia como desenvolvedor, além do fato de que não é possível "prever" quantos exames um paciente pode solicitar em um único pedido médico; e caso 
+usemos um array estático, podemos acabar tendo problemas na montagem do pedido, bem como estouro de memória.
+
+Já a biblioteca NumPy é ideal para cálculos numéricos e manipulação de grandes conjuntos de dados, sendo amplamente utilizada em ciência de dados, aprendizado de 
+máquina e computação científica. O numpy.array possui tamanho fixo após a criação, o que permite otimizações de desempenho significativas. Suas desvantages incluem a 
+necessidade de instalação adicional e a limitação de tipos homogêneos (isto é, todos os elementos devem ser do mesmo tipo).
+
+\subsection{Exemplos Práticos em Python}
+
+\subsubsection{Lista como vetor}
+
+\begin{lstlisting}[style=python, caption={Uso de list como vetor em Python}, label={lst:lista_vetor}]
+# ==================== EXEMPLO 1: Lista como vetor ====================
+vetor_lista = [10, 20, 30, 40, 50]
+
+# Acesso por indice
+print(f"Primeiro elemento: {vetor_lista[0]}")
+print(f"Ultimo elemento: {vetor_lista[-1]}")
+
+# Modificacao
+vetor_lista[2] = 999
+print(f"Vetor modificado: {vetor_lista}")
+
+# Soma manual
+soma = sum(vetor_lista)
+print(f"Soma (funcao sum): {soma}")
+
+# Multiplicacao por escalar (list comprehension)
+vetor_dobrado = [x * 2 for x in vetor_lista]
+print(f"Vetor dobrado: {vetor_dobrado}")
+\end{lstlisting}
+
+\subsubsection{Vetorização Real com NumPy}
+
+\begin{lstlisting}[style=python, caption={Vetorização Real com NumPy}, label={lst:lista_vetor}]
+# ================ EXEMPLO 2: NumPy - Vetorizacao Real ================
+import numpy as np
+
+print("\n=== Usando numpy.ndarray (vetor de verdade) ===")
+vetor_np = np.array([10, 20, 30, 40, 50], dtype=np.float64)
+
+# OPERACOES VETORIZADAS (o grande diferencial!)
+print(f"Vetor original: {vetor_np}")
+print(f"Vetor + 100: {vetor_np + 100}")
+print(f"Vetor * 3: {vetor_np * 3}")
+print(f"Vetor ao quadrado: {vetor_np ** 2}")
+print(f"Soma total: {vetor_np.sum()}")
+print(f"Media: {vetor_np.mean():.2f}")
+print(f"Desvio padrao: {vetor_np.std():.2f}")
+print(f"Maior valor: {vetor_np.max()}, Menor: {vetor_np.min()}")
+\end{lstlisting}
+
+\subsubsection{Vetores bidimensionais (matrizes)}
+
+\begin{lstlisting}[style=python, caption={Vetores bidimensionais (matrizes)}, label={lst:lista_vetor}]
+# ================ Vetores bidimensionais (matrizes) ================
+print("\n=== Matriz 3x3 com NumPy ===")
+matriz = np.array([[1, 2, 3],
+                   [4, 5, 6],
+                   [7, 8, 9]])
+
+print("Matriz:\n", matriz)
+
+# Transposta
+print("Transposta:\n", matriz.T)
+
+# Multiplicacao elemento a elemento
+print("Matriz ao quadrado (element-wise):\n", matriz ** 2)
+
+# Produto matricial
+print("Matriz x sua transposta:\n", matriz @ matriz.T)
+\end{lstlisting}
+
+\subsubsection{Performance entre lista e NumPy.Array}
+
+\begin{lstlisting}[style=python, caption={Performance entre lista e NumPy.Array}, label={lst:lista_vetor}]
+# ============ Performance real (milhoes de elementos) ============
+import time
+
+tamanho = 10_000_000
+
+# Lista Python
+inicio = time.time()
+lista = list(range(tamanho))
+lista_dobro = [x * 2 for x in lista]
+fim = time.time()
+print(f"\nLista (10M elementos) - tempo: {fim - inicio:.3f} s")
+
+# NumPy
+inicio = time.time()
+vetor = np.arange(tamanho)
+vetor_dobro = vetor * 2
+fim = time.time()
+print(f"NumPy (10M elementos) - tempo: {fim - inicio:.3f} s")
+# Resultado tipico: NumPy sendo 50 - 200x mais rapido!
+\end{lstlisting}
+
+\newpage
+
+\subsubsection{Operações vetoriais comuns usando NumPy}
+
+\begin{lstlisting}[style=python, caption={Operações vetoriais comuns usando NumPy}, label={lst:lista_vetor}]
+# ============ Operacoes vetoriais ============
+a = np.array([1, 2, 3, 4])
+b = np.array([10, 20, 30, 40])
+
+print(a + b)                      # [11 22 33 44]
+print(a - b)                      # [-9 -18 -27 -36]
+print(a * b)                      # [10 40 90 160]  (produto elemento a elemento)
+print(a / b)                      # [0.1 0.1 0.1 0.1]
+print(a.dot(b))                   # 300 (produto escalar)
+print(np.cross([1,0,0], [0,1,0])) # vetor perpendicular (3D)
+\end{lstlisting}
+
+\subsection{Aplicações reais de vetores}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{|c|c|}
+\hline
+
+\textbf{Área} & \textbf{Uso de vetores} \\ \hline
+Machine Learning & Vetor de 784 dimensões (i.e. imagem 28 x 28) \\ \hline
+Física & posição, velocidade, aceleração, etcs. \\ \hline
+Processamento de áudio & vetor 1D contendo milhares de pontos \\ \hline
+Finanças & Série temporal de preços (i.e. vetor de retornos diários) \\ \hline
+Visão computacional & Imagens (i.e. Tensores) \\ \hline
+
+\end{tabular}
+\caption{Resumo comparativo entre listas nativas do Python e arrays da biblioteca NumPy.}
+\end{table}
+
+\subsection{Boas práticas}
+
+\begin{lstlisting}[style=python, caption={Operações vetoriais comuns usando NumPy}, label={lst:lista_vetor}]
+# 1. Sempre especifique o dtype quando for critico
+vetor_preciso = np.array([1.1, 2.2, 3.3], dtype=np.float32)
+
+# 2. Use funcoes universais (ufuncs) - sao rapidas e legiveis
+np.sin(vetor) # seno de cada elemento
+np.exp(vetor) # exponencial
+np.log(vetor) # logaritmo
+
+# 3. Evite loops explicitos em NumPy
+# Exemplo ruim:
+for i in range(len(v)): v[i] *= 2
+# Exemplo bom:
+v *= 2
+\end{lstlisting}
+
+\subsection{Conclusão}
+
+Embora o Python nativo ofereça listas flexíveis que podem atuar como vetores, o verdadeiro poder dos \textbf{vetores na programação moderna} vem da vetorização 
+proporcionada pelo \textbf{NumPy}. Ela permite:
+
+\begin{itemize}
+    \item Código mais límpo e legível;
+    \item Desempenho "próximo" de linguagens compiladas para operações numéricas;
+    \item Base para bibliotecas como Pandas, Scikit-learn, TensorFlow e PyTorch
+\end{itemize}
+
+\end{document}
