@@ -1,0 +1,88 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{geometry}
+\geometry{left=3cm, right=2cm, top=3cm, bottom=2cm}
+\usepackage[portuguese,brazil]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{multicol}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{pgfplots}
+\usepackage{calc}
+\usepackage{listings}
+
+\usepackage{xcolor} % necessário para cores
+
+\definecolor{codeback}{RGB}{245,245,248}
+\definecolor{string}{RGB}{0,120,0}
+\definecolor{keyword}{RGB}{0,0,180}
+\definecolor{comment}{RGB}{120,120,120}
+\definecolor{number}{RGB}{180,0,0}
+
+\lstset{
+    backgroundcolor=\color{codeback},
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{keyword}\bfseries,
+    stringstyle=\color{string},
+    commentstyle=\color{comment}\itshape,
+    numberstyle=\tiny\color{gray},
+    numbers=left,
+    numbersep=10pt,
+    stepnumber=1,
+    showspaces=false,
+    showstringspaces=false,
+    tabsize=4,
+    frame=single,
+    frameround=tttt,
+    rulecolor=\color{black!30},
+    breaklines=true,
+    breakatwhitespace=true,
+    captionpos=b,
+    abovecaptionskip=10pt,
+    belowcaptionskip=10pt,
+    xleftmargin=15pt,
+    xrightmargin=10pt,
+    columns=flexible,
+    keepspaces=true,
+    escapeinside={(*@}{@*)} % permite LaTeX dentro do código
+}
+
+% Estilo específico para Python
+\lstdefinestyle{python}{
+    language=Python,
+    morekeywords={*,import,as,from,None,True,False,self,np},
+    emph={array,arange,sum,mean,std,max,min,dot,cross,sin,exp,log},
+    emphstyle=\color{blue}\bfseries
+}
+
+% Estilo específico para C#
+\lstdefinestyle{csharp}{
+    language=[Sharp]C,
+    morekeywords={using,var,new,public,private,static,void,double,float,int,bool},
+    emph={Array,List,Enumerable,Range,Select,Sum,Average},
+    emphstyle=\color{blue}\bfseries
+}
+
+\pgfplotsset{compat=1.18}
+\numberwithin{equation}{section}
+
+\title{Revisão e Notas sobre Estatística II}
+\author{Pedro Rupf Pereira Viana}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\section{Introdução e Objetivos}
+
+Trata-se de uma revisão teórica e expositiva sobre vetores e suas definições fundamentais no plano cartesiano, e suas aplicações na matemática, física e na programação.
+
+\section{Desenvolvimento}
+
+
+
+\end{document}
