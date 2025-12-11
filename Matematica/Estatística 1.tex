@@ -12,6 +12,7 @@
 \usepackage{pgfplots}
 \usepackage{calc}
 \usepackage{listings}
+\usepackage{float}
 \usepgfplotslibrary{statistics}
 
 \usepackage{xcolor} % necessário para cores
@@ -80,8 +81,8 @@
 
 \section{Introdução e Objetivos}
 
-Trata-se de uma revisão teórica e expositiva sobre Conceitos gerais, Análise Exploratória de Dados (EDA), conceitos de Amostragem, Probabilidade e os diferentes tipos 
-de Distribuições, bem como suas aplicações na área de Análise e Ciência de Dados.
+Trata-se de uma revisão teórica e expositiva sobre Conceitos gerais, Análise Exploratória de Dados (EDA), Amostragem, Probabilidade, Distribuição Normal e o Teorema 
+Central do Limite (TCL), bem como suas aplicações na área de Análise e Ciência de Dados.
 
 \section{Conceitos Gerais}
 
@@ -449,5 +450,304 @@ Embora menos rigorosos, são comuns em pesquisas qualitativas:
     \item \textbf{AAmostragem "Bola de Neve":} Indicada para populações raras; participantes indicam outros.
 \end{itemize}
 Esses métodos não permitem cálculo de erros padrão, limitando a generalização.
+
+\subsection{Dimensionamento Amostral}
+
+O tamanho da amostra $n$ é determinado por fórmulas que equilibram precisão e custo. Para estimar uma média com margem de erro $e$ e nível de confiança 
+$1-\alpha$ (tipicamente 95\%, $z = 1.96$):
+\begin{eqnarray}
+    n = \frac{z^2 \sigma^2}{e^2}
+\end{eqnarray}
+Para populações finitas: 
+\begin{eqnarray}
+    n = \frac{n_0}{1 + \frac{n_0 - 1}{N}}
+\end{eqnarray}
+onde $n_0$ é o $n$ infinito.
+
+Para proporções ($p$ estimada, frequentemente 0.5 para máxima variância):
+\begin{eqnarray}
+    n = \frac{z^2 p(1-p)}{e^2}
+\end{eqnarray}
+Fatores como poder estatístico (em testes de hipóteses) e efeito esperado também influenciam.
+
+\section{Probabilidade}
+
+\subsection{Conceito Básico}
+
+A teoria da probabilidade constitui o alicerce matemático para o estudo de fenômenos aleatórios, fornecendo ferramentas rigorosas para quantificar incerteza e modelar 
+eventos incertos. Surgida no século XVII com contribuições de Blaise Pascal e Pierre de Fermat no contexto de jogos de azar, e formalizada por Andrey Kolmogorov em 
+1933 por meio de uma abordagem axiomática, a probabilidade transcende sua origem lúdica para se tornar indispensável em campos como estatística inferencial, física 
+quântica, inteligência artificial e economia.
+
+Do ponto de vista matemático, a probabilidade é uma medida sobre espaços de eventos, satisfazendo axiomas que garantem consistência lógica. Em estatística, ela 
+sustenta a inferência, permitindo que amostras informem sobre populações via distribuições probabilísticas. Este texto explora os fundamentos axiomáticos, conceitos 
+chave como probabilidade condicional e independência, distribuições de probabilidade, teoremas limitantes centrais e aplicações, enfatizando o rigor matemático e as 
+implicações para a análise de dados.
+
+\subsection{Fundamentos e Definições da Probabilidade}
+
+Na literatura podemos encontrar três definições de probabilidade: \textbf{Clássica}, \textbf{Geométrica} e \textbf{Frequentista}.
+
+Na definição clássica todos os elementos de um espaço amostral possuem a mesma chance de acontecerem. Seja um evento \textit{A} de interesse, associado a um espaço 
+amostral $\Omega$. Então a probabilidade de ocorrência do evento \textit{A}, será a razão entre o número de elementos do evento de interesse com o número de elementos 
+do espaço amostral.
+\begin{eqnarray}
+    P(A) = \frac{n(A)}{n(\Omega)}
+\end{eqnarray}
+
+Considerando que o espaço amostral pode ser \textit{não enumerável}, então o conceito de probabilidades se aplicará ao comprimento de intervalos, medida de áreas ou 
+similares, dando origem a probabilidade geométrica.
+\begin{eqnarray}
+    P(A) = \frac{\text{comprimento de }A}{\text{comprimento de }\Omega}
+\end{eqnarray}
+
+Por fim, na definição frequêntista, deve-se considerar o limite das frequências relativas como o valor da probabilidade. Assim, seja $n_{A}$ o número de ocorrências 
+de \textit{A} em \textit{n} repetições independentes do experimento em questão, temos:
+\begin{eqnarray}
+    P(A) = \lim_{n \to \infty} \frac{n_{A}}{n}
+\end{eqnarray}
+
+Em síntese, isso significa que a medida que são realizados os experimentos, a probabilidade de ocorrência de um evento determinado se aproxima do verdadeiro valor a
+medida que o número de realizações tende ao infinito.
+
+Para isso, considere um experimento que consiste em lançar uma moeda 10, 50, 100 e 1000 vezes, e observar o número de ensaios em que o resultado é cara. Os resultados 
+podem ser verificados na Figura 01 abaixo. Observe que a medida que o número de ensaios cresce a probabilidade acumulada da ocorrência de cara converge para sua 
+verdadeira ocorrência, isto é, $P(A) = 0,5$.
+\begin{figure}[H]
+		\centering
+		\includegraphics[width=15cm]{003.png}
+		\caption{Convergência da frequência relativa de caras ao lançar uma moeda várias vezes.}
+\end{figure}
+
+Considerando que as definições anteriores são úteis para o cálculo de diversos problemas práticos e teóricos, é necessário enunciar uma série de axiomas para que se
+tenha uma formulação mais rigorosa para o conceito de probabilidade. Por volta do ano de 1930 o russo A. N. Kolmogorov apresentou esses axiomas matemáticos para 
+definir probabilidade.
+\begin{itemize}
+    \item \textbf{Axioma 1: }Para qualquer evento \textit{A}, $P(A) \geqslant 0$.
+    
+    O \textbf{Axioma 1} de Kolmogorov é assumido como verdadeiro por definição. Não há prova derivada; é um postulado fundamental que garante que probabilidades não 
+    sejam negativas.
+    \item \textbf{Axioma 2: }Seja $\Omega$ o espaço amostral associado ao experimento aleatório, então $P(\Omega) = 1$.
+    
+    O \textbf{Axioma 2} de Kolmogorov também é assumido por definição, pois representa a certeza de que algo no espaço amostral ocorre.
+    \item \textbf{Axioma 3: }Se $A_{1},A_{2},\cdots,A_{k}$ for um conjunto finito de eventos mutuamente exclusivos, isto é, $A_{i} \cap A_{j} = \varnothing$, então
+    $P(\bigcup_{i = 1}^{k} A_{i}) = \sum_{i = 1}^{k} P(A_{i})$.
+
+    O \textbf{Axioma 3} de Kolmogorov também é assumido por definição, pois para coleções finitas, reduz-se a $P(E_1 \cup \cdots \cup E_n) = P(E_1) + \cdots + P(E_n)$ 
+    quando disjuntos.
+\end{itemize}
+
+Ou seja, No experimento aleatório de lançar uma moeda e observar a face superior, o espaço amostral é $\Omega = {H,T}$. Pelos axiomas citados anteriormente, tem-se
+que $P(\Omega) = 1$. Logo:
+\begin{eqnarray}
+    1 = P(\Omega) = P(H \cup T) = P(H) + P(T) = 0,5 + 0,5
+\end{eqnarray}
+
+\subsection{Propriedades Derivadas}
+
+As propriedades abaixo são teoremas provados a partir dos axiomas supracitados.
+
+\begin{enumerate}
+    \item \textbf{Probabilidade do conjunto vazio}:
+    \[
+    P(\emptyset) = 0.
+    \]
+    \textit{Demonstração}: Note que $\emptyset \cup \emptyset = \emptyset$. Pelo Axioma 3,
+    \[
+    P(\emptyset) = P(\emptyset \cup \emptyset) = P(\emptyset) + P(\emptyset) \implies P(\emptyset) = 0.
+    \]
+
+    \item \textbf{Probabilidade do complemento}: Para qualquer evento $A$,
+    \[
+    P(A^c) = 1 - P(A).
+    \]
+    \textit{Demonstração}: Temos $A \cup A^c = \Omega$ e $A \cap A^c = \emptyset$. Pelo Axioma 3 e Axioma 2,
+    \[
+    P(\Omega) = P(A \cup A^c) = P(A) + P(A^c) = 1 \implies P(A^c) = 1 - P(A).
+    \]
+
+    \item \textbf{Monotonicidade}: Se $A \subseteq B$, então
+    \[
+    P(A) \leq P(B).
+    \]
+    \textit{Demonstração}: Se $A \subseteq B$, então $B = A \cup (B \setminus A)$ com $A \cap (B \setminus A) = \emptyset$. Pelo Axioma 3,
+    \[
+    P(B) = P(A) + P(B \setminus A).
+    \]
+    Como $P(B \setminus A) \geq 0$ (Axioma 1), segue que $P(B) \geq P(A)$.
+
+    \item \textbf{Limites da probabilidade}: Para qualquer evento $A$,
+    \[
+    0 \leq P(A) \leq 1.
+    \]
+    \textit{Demonstração}: 
+    \begin{itemize}
+        \item $P(A) \geq 0$ vem do Axioma 1.
+        \item Como $A \subseteq \Omega$, pela monotonicidade $P(A) \leq P(\Omega) = 1$. Ou ainda: $P(A) + P(A^c) = 1$ e $P(A^c) \geq 0 \implies P(A) \leq 1$.
+    \end{itemize}
+
+    \item \textbf{Princípio de inclusão-exclusão para dois eventos}:
+    \[
+    P(A \cup B) = P(A) + P(B) - P(A \cap B).
+    \]
+    \textit{Demonstração}: Escreva $A \cup B = A \cup (B \setminus A)$, onde $B \setminus A = B \cap A^c$ e os conjuntos são disjuntos. Pelo Axioma 3,
+    \[
+    P(A \cup B) = P(A) + P(B \setminus A).
+    \]
+    Agora, $B = (A \cap B) \cup (B \setminus A)$ com interseção vazia, logo
+    \[
+    P(B) = P(A \cap B) + P(B \setminus A) \implies P(B \setminus A) = P(B) - P(A \cap B).
+    \]
+    Substituindo,
+    \[
+    P(A \cup B) = P(A) + P(B) - P(A \cap B).
+    \]
+
+    \item \textbf{Probabilidade da união de eventos disjuntos (caso finito)}: Se $A \cap B = \emptyset$,
+    \[
+    P(A \cup B) = P(A) + P(B).
+    \]
+    \textit{Demonstração}: Caso particular do Axioma 3 ou do princípio de inclusão-exclusão:
+    \[
+    P(A \cup B) = P(A) + P(B) - P(\emptyset) = P(A) + P(B).
+    \]
+\end{enumerate}
+
+Essas são as propriedades mais fundamentais e comumente usadas na probabilidade clássica. Elas valem tanto para espaços de probabilidade finitos quanto contínuos, 
+desde que os axiomas de Kolmogorov sejam satisfeitos.
+
+\section{Distribuição Normal}
+
+A distribuição normal, frequentemente chamada de curva de sino ou distribuição gaussiana, é uma das ferramentas mais fundamentais e versáteis da estatística e da 
+probabilidade. Ela descreve como os valores de uma variável se distribuem ao redor de um ponto central, com a maioria dos dados concentrados no meio e diminuindo 
+simetricamente para os lados. Imagine uma montanha simétrica, onde o pico representa o valor mais comum, e as encostas mostram como os valores se tornam menos 
+frequentes à medida que se afastam do centro. Essa forma é tão comum na natureza e nos dados humanos que a distribuição normal se tornou um pilar para entender 
+padrões em tudo, desde alturas de pessoas até erros de medição em experimentos científicos.
+
+\subsection{Origem}
+
+A distribuição normal tem raízes no século XVIII, quando matemáticos como Abraham de Moivre começaram a estudá-la como uma aproximação para distribuições binomiais em 
+jogos de azar. Por exemplo, ao lançar uma moeda muitas vezes, a probabilidade de obter um número de caras próximo à metade do total se concentra em torno de um valor 
+médio, formando algo semelhante a uma curva de sino. No início do século XIX, Pierre-Simon Laplace e Carl Friedrich Gauss refinaram esses ideias, aplicando-as a erros 
+de observação em astronomia. Gauss, em particular, usou a distribuição para modelar variações em medições celestes, o que levou à sua associação com o nome 
+"gaussiana".
+
+Ao longo do século XIX, figuras como Adolphe Quetelet aplicaram o conceito a dados sociais, como alturas e pesos de populações humanas, demonstrando que muitos traços 
+biológicos seguem padrões normais. Francis Galton, um pioneiro na estatística, admirava tanto essa distribuição que a descreveu como uma "lei de frequência de erro" 
+que revelava uma ordem cósmica. No século XX, com o avanço da estatística inferencial por Ronald Fisher e outros, a normal se consolidou como base para testes 
+estatísticos e modelagens. Hoje, em uma era de big data e inteligência artificial, ela continua relevante, adaptada a contextos digitais e computacionais.
+
+Essa evolução reflete uma transição de curiosidades matemáticas para uma ferramenta essencial na ciência empírica. A distribuição normal não foi "inventada", mas 
+descoberta como um padrão recorrente, destacando como a matemática pode capturar a essência da variabilidade no mundo.
+
+\subsection{Definição Formal e Função Densidade}
+
+Seja $X$ uma variável aleatória contínua. Dizemos que $X$ segue uma \textbf{distribuição normal} com média $\mu$ e variância $\sigma^2 > 0$ (denotada 
+$X \sim \mathcal{N}(\mu,\sigma^2)$) quando sua função densidade de probabilidade é:
+\begin{eqnarray}
+    f(x) = \frac{1}{\sigma\sqrt{2\pi}} \exp\left[-\frac{(x - \mu)^2}{2\sigma^2}\right], \qquad -\infty < x < +\infty
+\end{eqnarray}
+onde:
+\begin{itemize}
+    \item $\mu$ (média) $\to$ centro da curva (pico do sino)
+    \item $\sigma$ (desvio padrão) $\to$ controla a largura do sino
+    \item $\sigma^2$ (variância) $\to$ medida de dispersão ao quadrado
+\end{itemize}
+
+\subsection{Distribuição Normal Padrão}
+
+A normal padrão é o caso particular em que $\mu = 0$ e $\sigma = 1$. Denotamos $Z \sim \mathcal{N}(0,1)$. Sua densidade é:
+\begin{eqnarray}
+    \phi(z) = \frac{1}{\sqrt{2\pi}} \exp\left(-\frac{z^2}{2}\right)
+\end{eqnarray}
+
+Qualquer normal pode ser padronizada pela transformação:
+\begin{eqnarray}
+    Z = \frac{X - \mu}{\sigma}
+\end{eqnarray}
+
+\subsection{Principais Propriedades}
+
+\begin{itemize}
+    \item Simetria perfeita: $f(\mu + t) = f(\mu - t)$ para todo $t$
+    \item Média $=$ Mediana $=$ Moda $=$ $\mu$
+    \item Variância $=$ $\sigma^2$ e desvio padrão $=$ $\sigma$
+    \item Assimetria (skewness) $=$ 0
+    \item Curtose excessiva $=$ 0 (curva mesocúrtica)
+    \item Função geradora de momentos:
+    \[
+    M(t) = \exp\left(\mu t + \frac{\sigma^2 t^2}{2}\right)
+    \]
+    \item \textbf{Reprodutividade (fechamento sob combinações lineares):}\\
+    Se $X_i \sim \mathcal{N}(\mu_i,\sigma_i^2)$ forem independentes e $a_i, b$ constantes, então
+    \[
+    \sum_{i} a_i X_i + b \;\sim\; \mathcal{N}\left(\sum_{i} a_i \mu_i + b,\; \sum_{i} a_i^2 \sigma_i^2\right)
+    \]
+\end{itemize}
+
+\subsection{Regra Empírica (68–95–99,7)}
+
+\begin{align*}
+P(|\,X - \mu\,| < \sigma)      &\approx 0{,}683 \\
+P(|\,X - \mu\,| < 2\sigma)     &\approx 0{,}954 \\
+P(|\,X - \mu\,| < 3\sigma)     &\approx 0{,}997
+\end{align*}
+
+Na normal padrão:
+
+\begin{align*}
+P(-1 < Z < 1) &\approx 68{,}3\% \\
+P(-2 < Z < 2) &\approx 95{,}4\% \\
+P(-3 < Z < 3) &\approx 99{,}7\%
+\end{align*}
+
+\subsection{Função de Distribuição Cumulativa}
+
+\[
+\Phi(z) = P(Z \leq z) = \int_{-\infty}^{z} \phi(t)\,dt
+\]
+
+Não possui forma fechada, mas está extensivamente tabelada e implementada em softwares.
+
+\section{Teorema Central do Limite (versão clássica)}
+
+A ubiquidade da distribuição normal não é acidental; ela é explicada por teoremas que mostram como ela surge como limite de muitos processos aleatórios. O Teorema 
+Central do Limite é o mais famoso: quando você soma muitas variáveis aleatórias independentes, independentemente de suas distribuições originais (desde que tenham 
+variabilidade finita), a soma tende a se comportar como uma normal à medida que o número de variáveis aumenta. Por exemplo, a média de muitos lançamentos de dados, 
+mesmo que cada dado seja uniforme, aproxima-se de uma curva de sino.
+
+Isso explica por que fenômenos compostos por múltiplos fatores independentes — como o crescimento de plantas influenciado por genes, solo e clima — frequentemente 
+seguem padrões normais. Em estatística, esse teorema justifica o uso da normal para aproximar distribuições amostrais, permitindo inferências sobre populações a 
+partir de amostras. Sem ele, muitas análises estatísticas modernas seriam impraticáveis.
+
+Outros resultados semelhantes, como aproximações para distribuições binomiais em grandes amostras, reforçam essa centralidade. Em resumo, a normal não é imposta; ela 
+emerge organicamente da soma de influências aleatórias, refletindo a complexidade do mundo real.
+
+\subsection{Definição}
+
+Sejam $X_1,\dots,X_n$ variáveis aleatórias i.i.d. com média $\mu$ e variância $\sigma^2 < \infty$. Então, quando $n\to\infty$,
+
+\[
+\sqrt{n}\;\frac{\bar{X}_n - \mu}{\sigma} \;\xrightarrow{d}\; \mathcal{N}(0,1)
+\]
+
+Essa é a razão profunda pela qual a normal aparece “em todo lugar”.
+
+\subsection{Exemplos Práticos de Uso das Equações}
+
+\begin{itemize}
+    \item \textbf{Intervalo de confiança de 95\% para a média} ($\sigma$ conhecida):
+    \[
+    \bar{X} \pm 1{,}96 \cdot \frac{\sigma}{\sqrt{n}}
+    \]
+    \item \textbf{Estatística do teste z para média}:
+    \[
+    z = \frac{\bar{X} - \mu_0}{\sigma / \sqrt{n}}
+    \]
+    \item \textbf{Regressão linear clássica} assume:
+    \[
+    \varepsilon_i \overset{\text{iid}}{\sim} \mathcal{N}(0,\sigma^2)
+    \]
+\end{itemize}
 
 \end{document}
