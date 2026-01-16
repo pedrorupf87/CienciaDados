@@ -9,9 +9,13 @@
 \usepackage{multicol}
 \usepackage{amsfonts}
 \usepackage{amssymb}
+\usepackage{tikz}
 \usepackage{pgfplots}
 \usepackage{calc}
+\usepackage{subcaption}
 \usepackage{listings}
+\usepackage{float}
+\usepgfplotslibrary{statistics}
 
 \usepackage{xcolor} % necessário para cores
 
@@ -79,10 +83,1448 @@
 
 \section{Introdução e Objetivos}
 
-Trata-se de uma revisão teórica e expositiva sobre vetores e suas definições fundamentais no plano cartesiano, e suas aplicações na matemática, física e na programação.
+Trata-se de uma revisão teórica e expositiva sobre Intervalos de Confiança, Testes de Hipóteses, Distribuição T de Student, Distribuição Binomial, Distribuição de 
+Poisson, Qui-Quadrado, ANOVA, Métricas de Erros, bem como suas aplicações na área de Análise e Ciência de Dados.
 
-\section{Desenvolvimento}
+\section{Intervalos de Confiança}
+
+Os intervalos de confiança constituem um dos instrumentos mais importantes e amplamente utilizados na estatística inferencial contemporânea. Eles permitem que o 
+pesquisador passe de uma estimativa pontual (um único valor calculado a partir da amostra) para uma estimativa intervalar, reconhecendo explicitamente a incerteza 
+inerente ao processo de amostragem e oferecendo uma medida quantitativa de precisão da inferência.
+
+Por exemplo: Imagine que você quer saber qual é a altura média dos brasileiros adultos. Você não tem como medir os 160 milhões de brasileiros adultos que existem, 
+então você pega uma amostra aleatória de 1.000 pessoas, mede todo mundo e calcula que a média dessa amostra é 1,71 m.
+
+Ótimo…mas será que essa média de 1,71 m é exatamente a média da população inteira? Provavelmente não. Amostras variam. Se você pegasse outra amostra de 1.000 pessoas 
+amanhã, talvez desse 1,708 m ou 1,713 m. Esse fenômeno chama-se variabilidade amostral. Então, como a gente “chega perto” da verdade sem medir todo mundo? É aí que 
+entra o intervalo de confiança.
+
+De forma simples e intuitiva, um intervalo de confiança é uma faixa de valores, calculada a partir dos dados amostrais, que provavelmente contém o verdadeiro 
+parâmetro populacional desconhecido. O nível de confiança associado (geralmente 90\%, 95\% ou 99\%) indica a proporção de vezes que intervalos construídos pelo mesmo 
+procedimento conteriam o parâmetro real se o processo de amostragem fosse repetido infinitas vezes sob as mesmas condições.
+
+\subsection{Interpretação correta do intervalo de confiança}
+
+É essencial distinguir a interpretação correta da interpretação frequentista clássica de algumas compreensões equivocadas bastante comuns. Um intervalo de 95\% de 
+confiança para a média populacional $\mu$ não significa que “há 95\% de probabilidade de $\mu$ estar dentro do intervalo calculado”, pois, na perspectiva frequentista, o 
+parâmetro $\mu$ é um valor fixo (ainda que desconhecido) e não uma variável aleatória com distribuição de probabilidade.
+
+A interpretação rigorosa é a seguinte: o método utilizado para construir o intervalo tem a propriedade de longo prazo de, em 95\% das amostras possíveis, gerar 
+intervalos que contêm o verdadeiro valor de $\mu$. Em outras palavras, antes de coletar os dados, temos 95\% de confiança de que o procedimento produzirá um intervalo 
+correto; após obter o intervalo específico, ele ou contém $\mu$ ou não contém — mas continuamos confiando no método que o gerou.\\
+
+\textit{Definição Formal}: Seja $\theta$ um parâmetro populacional desconhecido (média $\mu$, proporção $\pi$, diferença de médias $\mu_1 - \mu_2$, razão de chances, 
+coeficiente de regressão etc.). Um intervalo de confiança de $100(1 - \alpha)\%$ para $\theta$ é um par de estatísticas $(L, U)$, calculadas a partir da amostra 
+aleatória, tais que:
+\begin{eqnarray}
+    P(L < \theta < U) = 1 - \alpha
+\end{eqnarray}
+para todo $\theta$ no espaço paramétrico, onde $L$ é o limite inferior e $U$ o limite superior.\\
+A probabilidade é tomada antes da observação dos dados (pré-experimental); após observar a amostra, o intervalo ou contém $\theta$ ou não.
+
+\subsubsection{Caso clássico: média populacional com variância conhecida}
+
+Seja $X_1, \dots, X_n \sim \mathcal{N}(\mu, \sigma^2)$ uma amostra aleatória com $\sigma$ conhecido.\\
+A média amostral segue:
+\[
+\bar{X} \sim \mathcal{N}\left(\mu, \frac{\sigma^2}{n}\right)
+\]
+Padronizando:
+\[
+Z = \frac{\bar{X} - \mu}{\sigma / \sqrt{n}} \sim \mathcal{N}(0,1)
+\]
+Seja $z_{\alpha/2}$ o quantil tal que $P(Z > z_{\alpha/2}) = \alpha/2$ (ex.: $z_{0,025} = 1,96$ para 95\%).\\
+Então:
+\[
+P\left(-z_{\alpha/2} < \frac{\bar{X} - \mu}{\sigma / \sqrt{n}} < z_{\alpha/2}\right) = 1 - \alpha
+\]
+Reorganizando:
+\[
+P\left(\bar{X} - z_{\alpha/2} \cdot \frac{\sigma}{\sqrt{n}} < \mu < \bar{X} + z_{\alpha/2} \cdot \frac{\sigma}{\sqrt{n}}\right) = 1 - \alpha
+\]
+Portanto, o intervalo de confiança $100(1 - \alpha)\%$ para $\mu$ é:
+\[
+\left[\bar{X} - z_{\alpha/2} \cdot \frac{\sigma}{\sqrt{n}}, \;
+\bar{X} + z_{\alpha/2} \cdot \frac{\sigma}{\sqrt{n}}\right]
+\]
+
+\subsection{Fatores que influenciam a amplitude do intervalo}
+
+A largura do intervalo de confiança reflete o grau de incerteza da estimativa e depende basicamente de três elementos:
+\begin{itemize}
+    \item Variabilidade dos dados (desvio-padrão amostral ou populacional estimado): quanto maior a dispersão natural da característica na população, maior será a 
+    incerteza e, consequentemente, mais largo o intervalo.
+    \item Tamanho da amostra: há uma relação inversa com a raiz quadrada do tamanho amostral. Dobrar o tamanho da amostra reduz a largura aproximadamente pela metade 
+    (mais precisamente, pela raiz de $2 \approx 1,41$).
+    \item Nível de confiança escolhido: níveis mais altos (ex.: 99\% em vez de 95\%) exigem intervalos mais largos para garantir a cobertura desejada do parâmetro.
+\end{itemize}
+Esses três fatores permitem ao pesquisador planejar estudos com precisão desejada: definir previamente o tamanho amostral necessário para obter intervalos 
+suficientemente estreitos para os objetivos da pesquisa.
+
+\section{Testes de Hipóteses}
+
+Os testes de hipóteses representam um pilar central da estatística inferencial, permitindo que pesquisadores e analistas avaliem evidências empíricas para tomar 
+decisões informadas sobre populações com base em amostras. Desenvolvidos principalmente no início do século XX, esses testes fornecem um \textit{framework} sistemático 
+para confrontar suposições teóricas com dados observados, promovendo uma abordagem rigorosa e replicável na ciência. Neste texto, exploraremos os princípios básicos 
+dos testes de hipóteses, sua interpretação, exemplos práticos em diversas áreas e considerações éticas e metodológicas, sem aprofundar em derivações matemáticas 
+complexas.
+
+\subsection{Conceitos Básicos e Estrutura Geral}
+
+Em essência, um teste de hipóteses começa com a formulação de duas proposições opostas: a hipótese nula ($H_{0}$) e a hipótese alternativa ($H_{1}$ ou $H_{a}$). A 
+hipótese nula geralmente representa o \textit{status quo} ou a ausência de efeito (por exemplo, quando não há diferença entre os grupos ou quando o parâmetro é igual 
+a um valor específico). Já a hipótese alternativa expressa a mudança ou o efeito que o pesquisador suspeita existir, como há uma diferença, ou o parâmetro é maior 
+que um valor.
+
+O processo envolve coletar uma amostra da população de interesse, calcular uma estatística de teste (i.e. uma média, proporção ou diferença) e compará-la com o que 
+seria esperado sob a hipótese nula. Se os dados observados forem altamente improváveis sob $H_{0}$, rejeitamos a nula em favor da alternativa; caso contrário, não a 
+rejeitamos (no entanto, isto não equivale a aceitá-la como uma hipótese verdadeira). Isto é, matematicamente falando, seja $\theta$ um parâmetro populacional de 
+interesse (por exemplo, média $\mu$, proporção $\pi$, diferença $\mu_{1} - \mu_{2}$ etc.). Um teste de hipóteses envolve duas afirmações mutuamente exclusivas e 
+exaustivas:
+\begin{itemize}
+    \item Hipótese nula ($H_{0}$): geralmente uma afirmação de “ausência de efeito” ou igualdade a um valor específico.
+    
+    Exemplo: $H_{0}$: $\mu = \mu_{0}$, $H_{0}$: $\mu_{1} - \mu_{2} = 0$, $H_{0}$: $\pi = 0,5$.
+    \item Hipótese alternativa ($H_{1}$ ou $H_{a}$): a afirmação que o pesquisador deseja evidenciar. Pode ser:
+    \begin{itemize}
+        \item Bilateral: $H_{1}$: $\mu \neq \mu_{0}$
+        \item Unilateral à direita: $H_{1}$: $\mu > \mu_{0}$
+        \item Unilateral à esquerda: $H_{1}$: $\mu < \mu_{0}$
+    \end{itemize}
+\end{itemize}
+
+Um elemento chave é o nível de significância ($\alpha$), frequentemente definido em 5\% ou 1\%, que representa o risco aceitável de rejeitar $H_{0}$ quando ela é 
+verdadeira (também conhecido como erro Tipo I). Há também o erro Tipo II ($\beta$), que ocorre quando falhamos em rejeitar $H_{0}$ apesar dela ser falsa, relacionado 
+ao poder do teste (1 - $\beta$), que indica a capacidade de detectar um efeito real.
+
+A partir de uma amostra aleatória $X_{1}, \cdots ,X_{n}$, calcula-se uma estatística de teste $T = T(X_{1}, \cdots ,X_{n})$ cuja distribuição sob $H_{0}$ é conhecida (exata 
+ou assintoticamente). A decisão é tomada comparando $T$ com uma região crítica $C$ definida previamente:
+\begin{itemize}
+    \item Se $T \in C \rightarrow $ rejeita-se $H_{0}$ (resultado “estatisticamente significativo”).
+    \item Se $T \notin C \longrightarrow $ não se rejeita $H_{0}$.
+\end{itemize}
+
+O nível de significância $\alpha$, (geralmente 0,05 ou 0,01), é a probabilidade de erro Tipo I:
+\begin{eqnarray}
+    \alpha = P(\text{rejeitar } H_0 \mid H_0 \text{ verdadeira}) = P(T \in C \mid H_0)
+\end{eqnarray}
+
+\subsection{Interpretação dos Resultados: Valor-p e Suas Implicações}
+
+O valor-p é uma medida central nos testes de hipóteses, representando a probabilidade de obter resultados tão ou mais extremos que os observados, assumindo que $H_{0}$ 
+seja verdadeira. Um valor-p baixo (menor que $\alpha$) sugere que os dados são inconsistentes com a nula, levando à rejeição; um valor-p alto indica compatibilidade, 
+resultando em não rejeição.
+
+É \textbf{crucial} interpretar o valor-p com cautela. Ele não mede a probabilidade de $H_{0}$ ser verdadeira, nem a magnitude do efeito, \textbf{apenas a 
+compatibilidade dos dados com a probabilidade nula}. Críticas recentes, como as da American Statistical Association (ASA) em 2016, enfatizam que o valor-p isolado 
+pode levar a interpretações equivocadas, como confundir significância estatística com importância prática. Por isso, recomenda-se complementar os testes com 
+estimativas de efeito (como tamanhos de efeito) e intervalos de confiança, que oferecem uma visão mais nuançada da precisão e relevância dos achados.
+
+O valor-p é definido como a probabilidade, sob $H_{0}$ verdadeira, de obter uma estatística de teste tão ou mais extrema que a observada, na direção da alternativa:
+\begin{itemize}
+    \item Para teste bilateral: $p = 2 x P(T \geq |t_{obs}| H_{0})$ (quando a distribuição é simétrica).
+    \item Para teste unilateral à direita: $p = P(T \geq t_{obs} | H_{0})$.
+\end{itemize}
+
+\subsection{Tipos de Testes e Suas Aplicações}
+
+Existem diversos tipos de testes de hipóteses, adaptados a diferentes contextos e tipos de dados. Para comparações de médias, por exemplo, usa-se o teste $T$ para 
+amostras pequenas ou independentes, enquanto o teste $z$ é aplicado em amostras grandes com variância conhecida. Em análises de proporções, o teste qui-quadrado 
+($\chi^{2}$) ou o teste exato de Fisher são comuns para avaliar associações em tabelas de contingência.
+
+Nas ciências da saúde, testes de hipóteses são amplamente usados em ensaios clínicos. Considere um estudo avaliando se um novo analgésico reduz a dor mais que um 
+placebo: $H_{0}$ seria "não há diferença na redução da dor", e $H_{1}$ "o analgésico é superior". Se o valor-p for menor que 0,05, rejeita-se $H_{0}$, apoiando a 
+aprovação do medicamento, mas sempre considerando o contexto clínico, como efeitos colaterais.
+
+Em ciências sociais, como psicologia ou educação, testes são empregados para investigar diferenças entre grupos. Por exemplo, um pesquisador pode testar se um 
+programa de treinamento melhora o desempenho cognitivo em idosos: $H_{0}$ "não há melhoria", $H_{1}$ "há melhoria". Resultados significativos podem informar políticas 
+públicas, mas é essencial controlar por variáveis confundidoras para evitar conclusões espúrias.
+
+Na economia e administração, testes de hipóteses avaliam hipóteses sobre mercados ou comportamentos. Um analista pode testar se uma campanha publicitária aumenta as 
+vendas: $H_{0}$ "não há aumento", $H_{1}$ "há aumento". Aqui, o poder do teste é crítico, especialmente em amostras pequenas, para evitar falsos negativos que levem a 
+decisões erradas.
+
+\subsection{Exemplos Clássicos de Testes}
+
+\subsubsection{Teste $z$ para média ($\sigma$ conhecida):}
+
+Considerando $H_{0}$: $\mu = \mu_{0}$ versus $H_{1}$: $\mu \neq \mu_{0}$, calcula-se $z$ como sendo:
+\begin{eqnarray}
+    z = \frac{\bar{X} - \mu_0}{\sigma / \sqrt{n}} \sim N(0,1) \quad \text{sob } H_0
+\end{eqnarray}
+onde rejeita-se $H_{0}$ se $|z| > z_{\alpha/2}$, onde $z_{\alpha/2}$ é o quantil da normal padrão.
+
+\subsubsection{Teste $T$ de Student para média ($\sigma$ desconhecida):}
+
+Considerando $H_{0}$: $\mu = \mu_{0}$ versus $H_{1}$: $\mu \neq \mu_{0}$, calcula-se $z$ como sendo:
+\begin{eqnarray}
+    T = \frac{\bar{X} - \mu_0}{S / \sqrt{n}} \sim t_{n-1} \quad \text{sob } H_0
+\end{eqnarray}
+onde rejeita-se $|t| > z_{\alpha/2}$.
+
+\subsubsection{Teste $T$ para diferença entre duas médias independentes (variâncias iguais):}
+
+Considerando $H_{0}$: $\mu_{1} - \mu_{2} = 0$:
+\begin{eqnarray}
+    T = \frac{(\bar{X}_1 - \bar{X}_2)}{S_p \sqrt{\frac{1}{n_1} + \frac{1}{n_2}}}
+\end{eqnarray}
+onde $s_{p}^{2}$ é a variância combinada. A distribuição sob $H_{0}$ é $t$ com $n_{1} + n_{2} - 2$ graus de liberdade.
+
+\subsubsection{Teste $z$ para Proporção:}
+
+Considerando $H_{0}$: $\pi = \pi_{0}$ (isto é, amostras grandes):
+\begin{eqnarray}
+    z = \frac{\hat{p} - \pi_0}{\sqrt{\pi_0(1-\pi_0)/n}}
+\end{eqnarray}
+
+\subsubsection{Teste qui-quadrado de independência:}
+
+Para tabelas de contingência $r x c$, comparando frequências observadas $O_{ij}$ com esperadas $E_{ij}$ sob independência:
+\begin{eqnarray}
+    \chi^2 = \sum_{i,j} \frac{(O_{ij} - E_{ij})^2}{E_{ij}} \sim \chi^2_{(r-1)(c-1)} \quad \text{sob } H_0
+\end{eqnarray}
+
+\newpage
+
+\subsection{Vantagens e Limitações dos Testes de Hipóteses}
+
+As vantagens dos testes de hipóteses incluem sua objetividade e capacidade de quantificar incerteza, facilitando a comunicação de resultados em artigos acadêmicos e 
+relatórios. Eles promovem a falsificabilidade e permitem meta-análises para sintetizar evidências de múltiplos estudos.
+
+No entanto as limitações são evidentes. O dicotomismo entre \textbf{rejeitar} / \textbf{não rejeitar} pode incentivar o \textit{p-hacking} (isto é, uma manipulação de dados para obter 
+significância), levando a crises de reprodutibilidade em campos como a psicologia. Além disso, testes não capturam a probabilidade bayesiana de hipóteses, o que tem 
+impulsionado abordagens alternativas como a inferência bayesiana, que incorpora conhecimentos prévios.
+
+Ética também é um aspecto importante: testes devem ser pré-especificados em protocolos de pesquisa para evitar viés, e resultados não significativos (valores-p altos) 
+devem ser reportados para combater o viés de publicação, onde apenas achados "positivos" são divulgados.
+
+\section{Distribuição $T$ de Student}
+
+A distribuição $T$ de Student é uma das ferramentas mais fundamentais e amplamente utilizadas na estatística inferencial moderna, especialmente em situações em que 
+trabalhamos com amostras pequenas e a variância populacional é desconhecida. Introduzida no início do século XX, ela permite realizar inferências sobre médias 
+populacionais com maior realismo do que a distribuição normal padrão, reconhecendo a incerteza adicional introduzida pela estimativa da variância a partir dos próprios 
+dados amostrais.
+
+A distribuição t foi desenvolvida em 1908 por William Sealy Gosset, um químico e estatístico inglês que trabalhava na cervejaria Guinness em Dublin. Na época, a 
+empresa proibia a publicação de pesquisas por seus funcionários para proteger segredos industriais, motivo pelo qual Gosset publicou seu trabalho sob o pseudônimo 
+\textbf{Student}. Seu objetivo prático era melhorar o controle de qualidade na produção de cerveja, analisando amostras pequenas de cevada e lúpulo, onde a variância 
+populacional não era conhecida e não podia ser assumida como fixa.
+
+O artigo original, intitulado \textit{The probable error of a mean}, marcou um avanço significativo: mostrou que, quando a variância é estimada a partir da amostra, a 
+distribuição da média padronizada não segue exatamente a normal padrão (curva em forma de sino de Gauss), mas uma curva semelhante, porém com caudas mais pesadas. 
+Essa característica reflete maior incerteza nas estimativas com amostras pequenas.
+
+Suponha que $X_1, \cdots, X_n$ seja uma amostra aleatória independente de uma população normal com média $\mu$ e variância $\sigma^2$:
+\begin{eqnarray}
+    X_i \sim \mathcal{N}(\mu, \sigma^2), \quad i = 1, \dots, n.
+\end{eqnarray}
+
+A média amostral é:
+\begin{eqnarray}
+    \bar{X} \sim \mathcal{N}\left(\mu, \frac{\sigma^2}{n}\right)
+\end{eqnarray}
+e a variância amostral não viesada é:
+\begin{eqnarray}
+    S^2 = \frac{\sum_{i=1}^n (X_i - \bar{X})^2}{n - 1}
+\end{eqnarray}
+
+Sabe-se que:
+\begin{eqnarray}
+    \frac{(n - 1) S^2}{\sigma^2} \sim \chi^2_{n-1} \quad \text{(qui-quadrado com $n-1$ graus de liberdade)}
+\end{eqnarray}
+e que $\bar{X}$ e $S^2$ são independentes (propriedade das distribuições normais).
+
+A estatística pivotal resultante é:
+\begin{eqnarray}
+    T = \frac{\bar{X} - \mu}{S / \sqrt{n}} = \frac{ (\bar{X} - \mu) / (\sigma / \sqrt{n}) }{ \sqrt{ \frac{(n-1) S^2}{\sigma^2} / (n-1) } }.
+\end{eqnarray}
+
+O numerador segue $\mathcal{N}(0,1)$ e o denominador é a raiz quadrada de uma variável qui-quadrado dividida por seus graus de liberdade. Portanto:
+\begin{eqnarray}
+    T \sim T_{n-1}
+\end{eqnarray}
+onde $T_\nu$ denota a distribuição $T$ de Student com $\nu$ graus de liberdade.
+
+\subsection{Função Densidade de Probabilidade}
+
+A distribuição $T$ depende de um único parâmetro: os \textbf{graus de liberdade}, geralmente denotados por $\nu$. Os graus de liberdade estão diretamente relacionados 
+ao tamanho da amostra: para uma amostra de tamanho $n$, ao estimar a variância, perdemos um grau de liberdade, resultando em $\nu = n - 1$.
+
+Sendo assim, a densidade de probabilidade da distribuição $T$, com $\nu$ graus de liberdade é dada por:
+\begin{eqnarray}
+    f(t \mid \nu) = \frac{ \Gamma((\nu + 1)/2) }{ \sqrt{\nu \pi} \, \Gamma(\nu/2) } \left(1 + \frac{t^2}{\nu}\right)^{-(\nu + 1)/2}, \quad t \in \mathbb{R}
+\end{eqnarray}
+onde $\Gamma(\cdot)$ é a função gama. Essa expressão mostra explicitamente a dependência dos graus de liberdade e a forma simétrica em torno de zero.
+
+Tendo as principais propriedades definidas abaixo:
+\begin{itemize}
+  \item \textbf{Simetria}: $f(-t \mid \nu) = f(t \mid \nu)$, portanto média $= 0$ (quando $\nu > 1$).
+  \item \textbf{Variância}: $\mathrm{Var}(t) = \nu / (\nu - 2)$ para $\nu > 2$ (maior que 1, refletindo caudas mais pesadas que a normal).
+  \item \textbf{Momentos}: o quarto momento existe apenas para $\nu > 4$; curtose excessiva positiva, especialmente para $\nu$ pequeno.
+  \item \textbf{Convergência}: quando $\nu \to \infty$, $t_\nu \to \mathcal{N}(0,1)$ em distribuição (teorema central do limite aplicado à qui-quadrado).
+\end{itemize}
+
+Podemos ver à seguir, na Figura 1, um exemplo de distribuição de densidade de probabilidade, considerando alguns graus de liberadade:
 
 
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    xlabel={T},
+    ylabel={Densidade de probabilidade},
+    legend pos=north east,
+    grid=major,
+    width=12cm,
+    height=8cm,
+    xmin=-5, xmax=5,
+    ymin=0, ymax=0.45,
+    title={Densidades da distribuição $t$ de Student para diferentes graus de liberdade},
+]
+\addplot table {
+x y
+-5.0000 0.000001
+-4.8000 0.000004
+-4.6000 0.000010
+-4.4000 0.000025
+-4.2000 0.000059
+-4.0000 0.000134
+-3.8000 0.000293
+-3.6000 0.000615
+-3.4000 0.001239
+-3.2000 0.002398
+-3.0000 0.004459
+-2.8000 0.007964
+-2.6000 0.013668
+-2.4000 0.022535
+-2.2000 0.035694
+-2.0000 0.054316
+-1.8000 0.079406
+-1.6000 0.111526
+-1.4000 0.150484
+-1.2000 0.195073
+-1.0000 0.242940
+-0.8000 0.290665
+-0.6000 0.334103
+-0.4000 0.368945
+-0.2000 0.391414
+0.0000 0.398942
+0.2000 0.391414
+0.4000 0.368945
+0.6000 0.334103
+0.8000 0.290665
+1.0000 0.242940
+1.2000 0.195073
+1.4000 0.150484
+1.6000 0.111526
+1.8000 0.079406
+2.0000 0.054316
+2.2000 0.035694
+2.4000 0.022535
+2.6000 0.013668
+2.8000 0.007964
+3.0000 0.004459
+3.2000 0.002398
+3.4000 0.001239
+3.6000 0.000615
+3.8000 0.000293
+4.0000 0.000134
+4.2000 0.000059
+4.4000 0.000025
+4.6000 0.000010
+4.8000 0.000004
+5.0000 0.000001
+};
+\addlegendentry{Normal $\mathcal{N}(0,1)$}
+
+% t com ν=1 (do exemplo anterior)
+\addplot table {
+x y
+-5.0000 0.012243
+-4.8000 0.013242
+-4.6000 0.014367
+-4.4000 0.015638
+-4.2000 0.017083
+-4.0000 0.018733
+-3.8000 0.020628
+-3.6000 0.022818
+-3.4000 0.025365
+-3.2000 0.028348
+-3.0000 0.031869
+-2.8000 0.036058
+-2.6000 0.041085
+-2.4000 0.047174
+-2.2000 0.054620
+-2.0000 0.063815
+-1.8000 0.075278
+-1.6000 0.089687
+-1.4000 0.107904
+-1.2000 0.130944
+-1.0000 0.159793
+-0.8000 0.194889
+-0.6000 0.234961
+-0.4000 0.275274
+-0.2000 0.306627
+0.0000 0.318310
+0.2000 0.306627
+0.4000 0.275274
+0.6000 0.234961
+0.8000 0.194889
+1.0000 0.159793
+1.2000 0.130944
+1.4000 0.107904
+1.6000 0.089687
+1.8000 0.075278
+2.0000 0.063815
+2.2000 0.054620
+2.4000 0.047174
+2.6000 0.041085
+2.8000 0.036058
+3.0000 0.031869
+3.2000 0.028348
+3.4000 0.025365
+3.6000 0.022818
+3.8000 0.020628
+4.0000 0.018733
+4.2000 0.017083
+4.4000 0.015638
+4.6000 0.014367
+4.8000 0.013242
+5.0000 0.012243
+};
+\addlegendentry{$t$ com $\nu=1$}
+
+% t com ν=3
+\addplot table {
+x y
+-5.0000 0.004219
+-4.9000 0.004534
+-4.8000 0.004878
+-4.7000 0.005255
+-4.6000 0.005667
+-4.5000 0.006120
+-4.4000 0.006616
+-4.3000 0.007163
+-4.2000 0.007765
+-4.1000 0.008429
+-4.0000 0.009163
+-3.9000 0.009976
+-3.8000 0.010876
+-3.7000 0.011875
+-3.6000 0.012987
+-3.5000 0.014224
+-3.4000 0.015604
+-3.3000 0.017146
+-3.2000 0.018871
+-3.1000 0.020803
+-3.0000 0.022972
+-2.9000 0.025409
+-2.8000 0.028152
+-2.7000 0.031241
+-2.6000 0.034727
+-2.5000 0.038661
+-2.4000 0.043108
+-2.3000 0.048134
+-2.2000 0.053818
+-2.1000 0.060246
+-2.0000 0.067510
+-1.9000 0.075711
+-1.8000 0.084956
+-1.7000 0.095352
+-1.6000 0.107007
+-1.5000 0.120017
+-1.4000 0.134462
+-1.3000 0.150389
+-1.2000 0.167802
+-1.1000 0.186637
+-1.0000 0.206748
+-0.9000 0.227883
+-0.8000 0.249666
+-0.7000 0.271588
+-0.6000 0.293011
+-0.5000 0.313181
+-0.4000 0.331274
+-0.3000 0.346454
+-0.2000 0.357944
+-0.1000 0.365114
+0.0000 0.367553
+0.1000 0.365114
+0.2000 0.357944
+0.3000 0.346454
+0.4000 0.331274
+0.5000 0.313181
+0.6000 0.293011
+0.7000 0.271588
+0.8000 0.249666
+0.9000 0.227883
+1.0000 0.206748
+1.1000 0.186637
+1.2000 0.167802
+1.3000 0.150389
+1.4000 0.134462
+1.5000 0.120017
+1.6000 0.107007
+1.7000 0.095352
+1.8000 0.084956
+1.9000 0.075711
+2.0000 0.067510
+2.1000 0.060246
+2.2000 0.053818
+2.3000 0.048134
+2.4000 0.043108
+2.5000 0.038661
+2.6000 0.034727
+2.7000 0.031241
+2.8000 0.028152
+2.9000 0.025409
+3.0000 0.022972
+3.1000 0.020803
+3.2000 0.018871
+3.3000 0.017146
+3.4000 0.015604
+3.5000 0.014224
+3.6000 0.012987
+3.7000 0.011875
+3.8000 0.010876
+3.9000 0.009976
+4.0000 0.009163
+4.1000 0.008429
+4.2000 0.007765
+4.3000 0.007163
+4.4000 0.006616
+4.5000 0.006120
+4.6000 0.005667
+4.7000 0.005255
+4.8000 0.004878
+4.9000 0.004534
+5.0000 0.004219
+};
+\addlegendentry{$t$ com $\nu=3$}
+
+% t com ν=10
+\addplot table {
+x y
+-5.0000 0.000396
+-4.9000 0.000464
+-4.8000 0.000544
+-4.7000 0.000638
+-4.6000 0.000750
+-4.5000 0.000883
+-4.4000 0.001041
+-4.3000 0.001228
+-4.2000 0.001451
+-4.1000 0.001716
+-4.0000 0.002031
+-3.9000 0.002407
+-3.8000 0.002854
+-3.7000 0.003388
+-3.6000 0.004025
+-3.5000 0.004784
+-3.4000 0.005689
+-3.3000 0.006767
+-3.2000 0.008052
+-3.1000 0.009582
+-3.0000 0.011401
+-2.9000 0.013560
+-2.8000 0.016121
+-2.7000 0.019151
+-2.6000 0.022728
+-2.5000 0.026939
+-2.4000 0.031879
+-2.3000 0.037656
+-2.2000 0.044380
+-2.1000 0.052170
+-2.0000 0.061146
+-1.9000 0.071425
+-1.8000 0.083116
+-1.7000 0.096312
+-1.6000 0.111078
+-1.5000 0.127445
+-1.4000 0.145395
+-1.3000 0.164851
+-1.2000 0.185664
+-1.1000 0.207606
+-1.0000 0.230362
+-0.9000 0.253530
+-0.8000 0.276625
+-0.7000 0.299092
+-0.6000 0.320326
+-0.5000 0.339695
+-0.4000 0.356579
+-0.3000 0.370398
+-0.2000 0.380658
+-0.1000 0.386975
+0.0000 0.389108
+0.1000 0.386975
+0.2000 0.380658
+0.3000 0.370398
+0.4000 0.356579
+0.5000 0.339695
+0.6000 0.320326
+0.7000 0.299092
+0.8000 0.276625
+0.9000 0.253530
+1.0000 0.230362
+1.1000 0.207606
+1.2000 0.185664
+1.3000 0.164851
+1.4000 0.145395
+1.5000 0.127445
+1.6000 0.111078
+1.7000 0.096312
+1.8000 0.083116
+1.9000 0.071425
+2.0000 0.061146
+2.1000 0.052170
+2.2000 0.044380
+2.3000 0.037656
+2.4000 0.031879
+2.5000 0.026939
+2.6000 0.022728
+2.7000 0.019151
+2.8000 0.016121
+2.9000 0.013560
+3.0000 0.011401
+3.1000 0.009582
+3.2000 0.008052
+3.3000 0.006767
+3.4000 0.005689
+3.5000 0.004784
+3.6000 0.004025
+3.7000 0.003388
+3.8000 0.002854
+3.9000 0.002407
+4.0000 0.002031
+4.1000 0.001716
+4.2000 0.001451
+4.3000 0.001228
+4.4000 0.001041
+4.5000 0.000883
+4.6000 0.000750
+4.7000 0.000638
+4.8000 0.000544
+4.9000 0.000464
+5.0000 0.000396
+};
+\addlegendentry{$t$ com $\nu=10$}
+
+\end{axis}
+\end{tikzpicture}
+\caption{Comparação entre densidades da distribuição $T$ de Student e a normal padrão. Observa-se que, à medida que os graus de liberdade aumentam, a distribuição $T$ 
+    aproxima-se da normal.}
+\label{fig:tstudent}
+\end{figure}
+
+\subsection{Aplicações Principais}
+
+\subsubsection{Intervalo de confiança para a média $\mu$ ($\sigma$ desconhecida)}
+
+O intervalo $100(1 - \alpha)\%$ é:
+
+\[
+\bar{X} \pm t_{\alpha/2, n-1} \cdot \frac{S}{\sqrt{n}}.
+\]
+
+\subsubsection{Teste de hipótese para uma média}
+
+$H_0: \mu = \mu_0$ versus $H_1: \mu \neq \mu_0$  
+Estatística de teste:
+
+\[
+t_{\mathrm{obs}} = \frac{\bar{X} - \mu_0}{S / \sqrt{n}}.
+\]
+
+Rejeita-se $H_0$ ao nível $\alpha$ se $|t_{\mathrm{obs}}| > t_{\alpha/2, n-1}$.
+
+\subsubsection{Teste $t$ para duas amostras independentes (variâncias iguais)}
+
+$H_0: \mu_1 - \mu_2 = 0$  
+Estatística:
+
+\[
+t = \frac{\bar{X}_1 - \bar{X}_2}{S_p \sqrt{\frac{1}{n_1} + \frac{1}{n_2}}},
+\]
+
+com
+
+\[
+S_p^2 = \frac{(n_1-1)S_1^2 + (n_2-1)S_2^2}{n_1 + n_2 - 2}
+\]
+
+e $\nu = n_1 + n_2 - 2$ g.l.
+
+\subsubsection{Coeficientes em regressão linear}
+
+Para o modelo $Y = \beta_0 + \beta_1 X + \varepsilon$, $\varepsilon \sim \mathcal{N}(0, \sigma^2)$, o teste de significância de $\beta_1$ utiliza:
+
+\[
+t = \frac{\hat{\beta}_1}{\mathrm{SE}(\hat{\beta}_1)} \sim t_{n-2}.
+\]
+
+\subsection{Robustez e Limitações}
+
+A distribuição $T$ é exata apenas sob normalidade dos dados. Contudo, apresenta certa robustez para desvios moderados de normalidade, especialmente quando $\nu$ é 
+grande. Em presença de assimetria forte ou \textit{outliers}, métodos não paramétricos (tais como o de Wilcoxon e bootstrap), ou o teste de Welch (que ajusta os graus 
+de liberdade) são preferíveis.
+
+\section{Distribuição Binomial}
+
+A distribuição binomial é uma das distribuições de probabilidade discretas mais fundamentais e amplamente empregadas na estatística e na probabilidade, servindo como 
+base para modelar fenômenos que envolvem contagens de sucessos em um número fixo de tentativas independentes. Surgida no contexto do cálculo de probabilidades no 
+século XVII, ela oferece uma estrutura elegante para analisar situações do mundo real onde os resultados são dicotômicos (isto é, podem ser classificados como 
+\textit{sucesso} ou \textit{fracasso}).
+
+\subsection{Origem Histórica e Contexto Conceitual}
+
+A distribuição binomial tem raízes no trabalho de matemáticos como Blaise Pascal e Pierre de Fermat, que no século XVII investigaram problemas de jogos de azar, como 
+o lançamento de dados ou moedas. No entanto, foi Jacob Bernoulli, em sua obra póstuma \textit{Ars Conjectandi} (1713), quem formalizou o conceito ao estudar a 
+probabilidade de obter um número específico de sucessos em repetições independentes de um experimento binário. Bernoulli demonstrou que, com um número suficiente de 
+tentativas, a proporção de sucessos se aproxima da probabilidade verdadeira, sendo um precursor do teorema do limite central.
+
+O termo \textbf{binomial} deriva do teorema binomial de Isaac Newton, que descreve a expansão de expressões como $(p + q)^{n}$, onde $p$ é a probabilidade de sucesso, 
+$q = 1 - p$ é a de fracasso, e $n$ é o número de tentativas. Essa expansão reflete diretamente as probabilidades associadas a cada possível número de sucessos, 
+ilustrando como a distribuição binomial captura a essência de processos repetitivos e independentes.
+
+Em termos conceituais, imagine lançar uma moeda honesta (onde $p = 0,5$ para cara) dez vezes: a distribuição binomial modela a probabilidade de obter exatamente $k$ 
+caras (sucessos), para $k$ variando de 0 a 10. Essa simplicidade torna a distribuição acessível para iniciantes, mas sua versatilidade a torna indispensável em 
+pesquisas avançadas.
+
+Em termos matemáticos, Seja $X \sim \text{Bin}(n, p)$ o número de sucessos em $n$ tentativas independentes, onde cada tentativa tem $P(\text{sucesso}) = p$ e 
+$P(\text{fracasso}) = q = 1 - p$. A função de massa de probabilidade (fmp) é:
+\begin{eqnarray}
+    P(X = k) = \binom{n}{k} p^k q^{n-k}, \quad k = 0, 1, \dots, n
+\end{eqnarray}
+onde $\binom{n}{k} = \frac{n!}{k!(n-k)!}$ é o coeficiente binomial. Essa expressão surge da expansão do teorema binomial 
+$(p + q)^n = \sum_{k=0}^n \binom{n}{k} p^k q^{n-k}$.
+
+A função geradora de momentos (f.g.m.) é:
+\begin{eqnarray}
+    G_X(t) = (q + p t)^n
+\end{eqnarray}
+
+\subsection{Características Principais da Distribuição Binomial}
+
+A distribuição binomial é definida por dois parâmetros principais: $n$, o número fixo de tentativas independentes, e $p$, a probabilidade constante de sucesso em cada 
+tentativa. Cada tentativa deve satisfazer quatro condições chave: independência entre os eventos, número fixo de repetições, apenas dois resultados possíveis e 
+probabilidade constante de sucesso.
+
+Entre suas propriedades notáveis:
+\begin{itemize}
+    \item \textbf{Discreta e finita:} Os valores possíveis para o número de sucessos $k$ vão de 0 a $n$, resultando em uma distribuição em forma de barra que pode ser 
+    simétrica (quando $p = 0,5$) ou assimétrica (quando $p$ está próximo de 0 ou 1).
+    \item \textbf{Média e variância intuitivas:} A média esperada de sucessos é $n_{p}$, refletindo o que se espera "em média" (ex.: em 100 lançamentos de moeda, 
+    espera-se 50 caras). A variância, $n_{p}(1 - p)$, indica a dispersão: maior quando $p$ está perto de 0,5, capturando maior imprevisibilidade.
+    \item \textbf{Forma da distribuição:} Com $n$ pequeno, a distribuição pode ser irregular; com $n$ grande e $p$ moderado, ela se aproxima de uma curva em sino, 
+    facilitando aproximações por distribuições contínuas como a normal.
+\end{itemize}
+
+Essas características tornam a binomial ideal para modelar contagens, diferentemente de distribuições como a Poisson (para eventos raros sem limite superior) ou a 
+normal (para dados contínuos).
+
+\subsection{Propriedades}
+
+\begin{itemize}
+    \item Média (esperança): $E[X] = np$
+    \item Variância: $\text{Var}(X) = npq = np(1-p)$
+    \item Desvio-padrão: $\sigma_X = \sqrt{np(1-p)}$
+    \item Assimétrica: O modo é $\lfloor (n+1)p \rfloor$. A distribuição é simétrica quando $p = 0.5$; assimétrica à direita se $p < 0.5$; à esquerda se $p > 0.5$.
+    \item Função cumulativa: $F(k) = P(X \leq k) = \sum_{i=0}^k \binom{n}{i} p^i q^{n-i}$
+\end{itemize}
+
+Para $n$ grande, pela aproximação normal (teorema central do limite):
+\begin{eqnarray}
+    X \approx \mathcal{N}(np, npq)
+\end{eqnarray}
+com correção de continuidade: $P(a \leq X \leq b) \approx \Phi\left( \frac{b+0.5 - np}{\sqrt{npq}} \right) - \Phi\left( \frac{a-0.5 - np}{\sqrt{npq}} \right)$.
+Aproximação de Poisson: quando $n \to \infty$ e $p \to 0$ com $np = \lambda$ fixo, $X \approx \text{Poisson}(\lambda)$.
+
+\subsection{Aplicações Práticas da Distribuição Binomial}
+
+A distribuição binomial encontra aplicações em uma ampla gama de disciplinas, demonstrando sua relevância na análise de dados empíricos.
+
+Nas ciências biológicas e médicas, ela é usada para modelar a probabilidade de resultados em ensaios clínicos ou estudos genéticos. Por exemplo, em um teste de vacina 
+com 20 voluntários, onde a probabilidade de imunização é 0,8, a binomial calcula a chance de exatamente 16 sucessos (imunizados), auxiliando na avaliação de eficácia 
+e no planejamento de amostras.
+
+Em pesquisas sociais e de mercado, a distribuição auxilia na análise de opiniões ou comportamentos binários. Considere uma pesquisa com 500 eleitores, onde $p = 0,45$ é 
+a probabilidade de apoio a um candidato: a binomial estima a probabilidade de obter entre 200 e 250 apoios, ajudando a prever resultados eleitorais com margens de erro.
+
+Na engenharia e controle de qualidade, ela modela defeitos em processos de produção. Em uma fábrica que produz 100 itens com taxa de defeito de 0,02, a binomial avalia 
+a probabilidade de zero defeitos (sucesso total) ou mais de cinco, orientando decisões sobre inspeções.
+
+Em finanças e seguros, a distribuição binomial é aplicada em modelos de opções (como o modelo binomial de precificação de Cox-Ross-Rubinstein), simulando flutuações 
+de preços de ativos em passos discretos, onde cada "subida" ou "descida" é um evento binário.
+
+Além disso, em ecologia, ela modela a sobrevivência de espécies em habitats fragmentados, e em epidemiologia, a propagação de doenças em populações pequenas, como a 
+probabilidade de k infecções em n contatos.
+
+\subsection{Vantagens, Limitações e Extensões}
+
+As vantagens da distribuição binomial incluem sua simplicidade computacional (facilmente calculável com softwares como R ou Excel), interpretabilidade intuitiva e 
+robustez em cenários binários reais. Ela promove uma compreensão probabilística de incertezas, alinhando-se ao método científico ao permitir testes de hipóteses sobre 
+proporções.
+
+No entanto, limitações existem: assume independência estrita, o que nem sempre ocorre (ex.: em epidemias, contágios não são independentes); exige n fixo e p constante, 
+inadequado para processos dinâmicos; e com n muito grande, cálculos manuais tornam-se impraticáveis, demandando aproximações normais ou de Poisson.
+
+Extensões incluem a distribuição binomial negativa (para número de tentativas até k sucessos) e a multinomial (para mais de dois resultados), expandindo sua utilidade 
+para cenários complexos.
+
+\section{Distribuição de Poisson}
+
+A distribuição de Poisson é uma das distribuições de probabilidade discretas mais importantes na estatística aplicada, especialmente projetada para modelar a contagem 
+de eventos raros ou infrequentes que ocorrem em um intervalo fixo de tempo, espaço ou outra unidade contínua. Introduzida no início do século XIX pelo matemático 
+francês Siméon Denis Poisson, ela oferece uma ferramenta poderosa para descrever fenômenos onde os eventos acontecem de forma independente e com uma taxa média 
+constante, sem limite superior teórico para o número de ocorrências. Neste texto, exploraremos os fundamentos conceituais da distribuição de Poisson, sua origem 
+histórica, propriedades intuitivas, exemplos práticos em diferentes áreas do conhecimento e suas relações com outras distribuições, mantendo uma abordagem acessível e 
+priorizando a compreensão intuitiva sobre formalismos matemáticos excessivos.
+
+Do ponto de vista matemático, seja $X$ o número de eventos em um intervalo fixo. Dizemos que $X \sim \text{Poisson}(\lambda)$ se:
+\begin{eqnarray}
+    P(X = k) = \frac{e^{-\lambda} \lambda^k}{k!}, \quad k = 0, 1, 2, \dots
+\end{eqnarray}
+
+A função geradora de momentos é
+\begin{eqnarray}
+    G_X(t) = e^{\lambda(t-1)}
+\end{eqnarray}
+e a função geradora de probabilidade é $G_X(s) = e^{\lambda(s-1)}$.
+
+\subsection{Origem Histórica}
+
+A distribuição de Poisson surgiu em 1837, no trabalho de Siméon Denis Poisson intitulado \textit{Recherches sur la probabilité des jugements en matière criminelle et 
+en matière civile}. Poisson investigava a probabilidade de um número específico de condenações errôneas em julgamentos, mas o exemplo mais famoso associado à 
+distribuição é o número de soldados prussianos mortos por coice de cavalo em diferentes corpos do exército ao longo de um ano — dados analisados posteriormente por 
+Ladislaus Bortkiewicz em 1898, que demonstraram um ajuste impressionante à distribuição proposta por Poisson.
+
+A intuição central é simples: imagine eventos que ocorrem aleatoriamente em um continuum (tempo, área, volume, comprimento), de forma que:
+\begin{itemize}
+    \item Os eventos são independentes (a ocorrência de um não afeta a de outro).
+    \item A taxa média de ocorrência é constante (denotada por $\lambda$).
+    \item A probabilidade de mais de um evento em um intervalo muito pequeno é desprezível.
+\end{itemize}
+
+Nessas condições, o número de eventos em um intervalo fixo segue uma distribuição de Poisson com parâmetro $\lambda$, que representa tanto a média quanto a variância 
+esperada do número de ocorrências.
+
+Um exemplo clássico é a chegada de clientes a uma agência bancária: se, em média, chegam 3 clientes por hora ($\lambda = 3$), a distribuição de Poisson permite 
+calcular a probabilidade de chegar exatamente 0, 1, 2, 3 ou mais clientes em uma hora específica.
+
+\subsection{Propriedades Principais}
+
+\begin{itemize}
+  \item \textbf{Média e variância}: $\mathbb{E}[X] = \lambda$, $\mathrm{Var}(X) = \lambda$ (equidispersão — propriedade característica).
+  \item \textbf{Desvio padrão}: $\sigma_X = \sqrt{\lambda}$.
+  \item \textbf{Modo}: $\lfloor \lambda \rfloor$ (ou $\lfloor \lambda \rfloor$ e $\lfloor \lambda \rfloor - 1$ quando $\lambda$ é inteiro).
+  \item \textbf{Aditividade}: Se $X_i \sim \text{Poisson}(\lambda_i)$ independentes, então $\sum X_i \sim \text{Poisson}(\sum \lambda_i)$.
+  \item \textbf{Função cumulativa}: $F(k) = \sum_{i=0}^k \frac{e^{-\lambda} \lambda^i}{i!}$.
+\end{itemize}
+
+\subsection{Aproximações e Relações com Outras Distribuições}
+
+\begin{itemize}
+  \item \textbf{Limite binomial}: $X \sim \text{Bin}(n,p)$ com $n$ grande, $p$ pequeno e $np = \lambda$ fixo $\implies X \xrightarrow{d} \text{Poisson}(\lambda)$.
+  \item \textbf{Aproximação normal}: Para $\lambda \geq 10$ (ou preferencialmente $\lambda \geq 20$), $X \approx \mathcal{N}(\lambda, \lambda)$. Com correção de continuidade: $P(a \leq X \leq b) \approx P(a-0.5 < Y < b+0.5)$, $Y \sim \mathcal{N}(\lambda, \lambda)$.
+\end{itemize}
+
+\subsection{Aplicações Práticas}
+
+A distribuição de Poisson é amplamente utilizada em diversas áreas, demonstrando sua versatilidade na modelagem de contagens.
+
+Nas ciências da saúde e epidemiologia, ela modela o número de casos de doenças raras em uma população durante um período (ex.: número de casos de uma doença genética 
+em uma cidade por ano), o número de mutações em uma sequência de DNA ou a chegada de pacientes a um pronto-socorro em horários específicos.
+
+Em engenharia e confiabilidade, é usada para contar falhas de equipamentos (ex.: número de quebras de uma máquina em um mês), defeitos em um metro de tecido ou 
+acidentes em uma rodovia por dia.
+
+No setor de serviços e gestão de filas, modela chegadas de chamadas a um call center, pedidos em um site de e-commerce ou clientes em uma fila de supermercado, 
+servindo de base para teorias de filas (ex.: modelo M/M/1).
+
+Em ecologia e meio ambiente, conta o número de espécies em uma área amostral, de árvores em uma parcela florestal ou de partículas radioativas detectadas por um 
+contador Geiger.
+
+Em finanças e seguros, modela o número de sinistros em uma carteira de apólices, de reclamações por dia ou de transações fraudulentas.
+
+Um exemplo ilustrativo: uma central de emergências recebe, em média, 5 chamadas por hora ($\lambda = 5$). A distribuição de Poisson permite calcular a probabilidade de 
+receber zero chamadas (período ocioso), mais de 10 (sobrecarga) ou exatamente 5 (equilíbrio), auxiliando no dimensionamento de equipes.
+
+\subsection{Vantagens, Limitações e Extensões}
+
+As vantagens da distribuição de Poisson incluem sua simplicidade (apenas um parâmetro), interpretabilidade direta ($\lambda$ é taxa média) e boa adequação a dados de 
+contagem reais. Ela promove uma visão probabilística de fenômenos aleatórios, auxiliando na previsão e planejamento.
+
+Contudo, possui limitações: assume variância igual à média (equidispersão), o que nem sempre ocorre em dados reais, frequentemente observa-se sobredispersão 
+(variância > média) ou subdispersão (variância < média). Além disso, exige independência e taxa constante, condições violadas em fenômenos com aglomeração ou 
+tendências temporais.
+
+Para contornar essas limitações, existem extensões como a distribuição binomial negativa (para sobredispersão) e modelos de regressão de Poisson ou 
+\textit{quasi-Poisson}, amplamente usados em estatística aplicada.
+
+\section{Distribuição Qui-Quadrado}
+
+A distribuição qui-quadrado ($\chi^{2}$) é uma das distribuições de probabilidade contínuas mais importantes na estatística inferencial moderna, especialmente em 
+testes de hipóteses envolvendo variâncias, tabelas de contingência e adequação de modelos. Caracterizada por ser sempre não negativa e assimétrica à direita, ela 
+surge naturalmente quando se soma o quadrado de variáveis normais padronizadas independentes, oferecendo uma ferramenta essencial para avaliar discrepâncias entre 
+dados observados e expectativas teóricas.
+
+Formalmente, Sejam $Z_1, Z_2, \dots, Z_\nu$ variáveis aleatórias independentes, cada uma com distribuição normal padrão $\mathcal{N}(0,1)$. Então a variável aleatória:
+\begin{eqnarray}
+    \chi^2 = Z_1^2 + Z_2^2 + \dots + Z_\nu^2
+\end{eqnarray}
+segue a distribuição qui-quadrado com $\nu$ graus de liberdade, denotada por $\chi^2 \sim \chi^2_\nu$.
+
+A função densidade de probabilidade é dada por:
+\begin{eqnarray}
+    f(x \mid \nu) = \frac{1}{2^{\nu/2} \Gamma(\nu/2)} x^{\nu/2 - 1} e^{-x/2}, \quad x > 0
+\end{eqnarray}onde $\Gamma(\cdot)$ é a função gama.
+
+\subsection{Origem Histórica}
+
+A distribuição qui-quadrado foi formalizada no início do século XX, com contribuições decisivas de Karl Pearson (que a utilizou em 1900 para desenvolver o teste de 
+aderência) e Ronald Fisher (que a integrou ao framework de testes de hipóteses e análise de variância). Pearson buscava uma medida objetiva para avaliar se uma 
+distribuição observada se ajustava a uma distribuição teórica esperada, enquanto Fisher expandiu seu uso para inferências sobre variâncias e associações categóricas.
+
+A intuição básica é simples: imagine várias variáveis aleatórias independentes que seguem uma distribuição normal padrão (média zero e variância um). Se quadrarmos 
+cada uma delas e somarmos os resultados, o valor obtido segue uma distribuição qui-quadrado. Como o quadrado elimina valores negativos e enfatiza desvios grandes, a 
+distribuição resultante é sempre positiva, começa em zero e tem cauda longa à direita; isto é, quanto maior o número de termos somados (graus de liberdade), mais ela 
+se aproxima de uma forma simétrica semelhante à normal.
+
+\subsection{Características Principais}
+
+A distribuição qui-quadrado depende de um único parâmetro: os \textit{graus de liberdade}, denotados geralmente por $\nu$. Esse parâmetro determina completamente a 
+forma da curva:
+\begin{itemize}
+    \item Para poucos graus de liberdade (i.e. $\nu = 1$ ou 2), a distribuição é fortemente assimétrica à direita, com alta probabilidade perto de zero e cauda longa.
+    \item À medida que $\nu$ aumenta, a assimetria diminui e a distribuição se torna mais simétrica.
+    \item Quando $\nu$ é grande (geralmente acima de 30), o valor de qui-quadrado se aproxima bastante da distribuição normal (com média $\nu$ e variância $2\nu$).
+\end{itemize}
+
+Outras propriedades intuitivas incluem:
+\begin{itemize}
+    \item Média igual a $\nu$: o valor esperado da variável qui-quadrado coincide com o número de graus de liberdade.
+    \item Variância igual a $2\nu$: a dispersão cresce linearmente com $\nu$.
+    \item Sempre positiva: não há probabilidade para valores negativos, refletindo o fato de ser soma de quadrados.
+    \item Aditividade: a soma de variáveis qui-quadrado independentes (com $\nu_1, \nu_2, \dots, \nu_n$ graus de liberdade) também segue qui-quadrado com 
+    $\nu = \nu_1, \nu_2, \dots, \nu_n$ graus de liberdade.
+\end{itemize}
+
+Essas características fazem do qui-quadrado uma distribuição \textbf{pivotal} em muitos procedimentos inferenciais, pois sua forma não depende de parâmetros 
+desconhecidos da população.
+
+\subsection{Propriedades Principais}
+
+\begin{itemize}
+  \item \textbf{Domínio}: $x \geq 0$ (sempre não-negativa).
+  \item \textbf{Média}: $\mathbb{E}[\chi^2_\nu] = \nu$.
+  \item \textbf{Variância}: $\mathrm{Var}(\chi^2_\nu) = 2\nu$.
+  \item \textbf{Assimetria}: $\gamma_1 = \sqrt{8/\nu}$ (diminui com $\nu$).
+  \item \textbf{Curtose excessiva}: $\gamma_2 = 12/\nu$ (também diminui com $\nu$).
+  \item \textbf{Convergência}: Quando $\nu \to \infty$, pela lei dos grandes números e teorema central do limite,
+    \[
+    \frac{\chi^2_\nu - \nu}{\sqrt{2\nu}} \xrightarrow{d} \mathcal{N}(0,1).
+    \]
+  \item \textbf{Aditividade}: Se $X_i \sim \chi^2_{\nu_i}$ independentes, então $\sum X_i \sim \chi^2_{\sum \nu_i}$.
+\end{itemize}
+
+\subsection{Aplicações Principais}
+
+A distribuição qui-quadrado é o alicerce de vários testes estatísticos clássicos, todos baseados na comparação entre o que foi observado e o que seria esperado sob 
+uma hipótese nula.
+\begin{enumerate}
+    \item \textbf{Teste de aderência (goodness-of-fit):} Avalia se uma distribuição observada em dados categóricos se ajusta a uma distribuição teórica esperada. Por 
+    exemplo, em um dado de seis faces lançado 600 vezes, espera-se aproximadamente 100 ocorrências por face. O teste calcula quanto as frequências observadas desviam 
+    das esperadas e, se o desvio for grande demais, rejeita-se a hipótese de que o dado é honesto.
+    \item \textbf{Teste de independência:} Um dos usos mais comuns, onde verifica se duas variáveis categóricas são independentes em uma tabela de contingência 
+    (linhas x colunas). Exemplo clássico: uma pesquisa investiga se gênero e preferência política são associados. Calcula-se as frequências esperadas assumindo 
+    independência e compara-se com as observadas. Um valor qui-quadrado elevado indica associação estatisticamente significativa.
+    \item \textbf{Teste de homogeneidade:} Similar ao de independência, mas compara distribuições entre grupos diferentes. Exemplo: avaliar se a proporção de 
+    aprovação em diferentes cursos universitários é a mesma.
+    \item \textbf{Inferência sobre variância populacional:} Quando se tem uma amostra de uma população normal, a estatística $(n-1)S^{2} / \sigma^{2}$ segue 
+    qui-quadrado com $n-1$ graus de liberdade. Isso permite construir intervalos de confiança e testes de hipóteses para a variância $\sigma^{2}$ (embora menos usado 
+    hoje devido à sensibilidade à não-normalidade).
+    \item \textbf{Outros contextos:} Aparece em análise de variância (ANOVA), regressão linear (teste de significância global), modelos log-lineares e como base para 
+    distribuições derivadas (ex.: T de Student, F de Snedecor).
+\end{enumerate}
+
+\section{Análise de Variância (ANOVA)}
+
+A Análise de Variância (ANOVA, do inglês \textit{Analysis of Variance}) constitui um dos métodos estatísticos mais amplamente utilizados nas ciências experimentais e 
+observacionais para comparar médias de três ou mais grupos independentes. Desenvolvida principalmente por Ronald Fisher na década de 1920, no contexto da 
+experimentação agrícola, a ANOVA oferece um framework sistemático para determinar se as diferenças observadas entre médias de grupos são suficientemente grandes para 
+serem atribuídas a fatores controlados, em vez de mera variabilidade aleatória.
+
+\subsection{Origem Histórica}
+
+Fisher introduziu a ANOVA em seu clássico livro \textit{Statistical Methods for Research Workers (1925)} e no contexto dos experimentos em blocos e delineamentos 
+fatoriais na Rothamsted Experimental Station. O objetivo inicial era responder a uma pergunta simples, porém poderosa: “As diferentes variedades de trigo realmente 
+produzem rendimentos médios diferentes, ou as variações observadas são apenas flutuações esperadas devido ao acaso?”
+
+A intuição central da ANOVA é dividir a variabilidade total presente nos dados em duas partes principais:
+\begin{itemize}
+    \item Variabilidade \textbf{entre grupos} (ou entre tratamentos): Reflete as diferenças sistemáticas causadas pelo fator de interesse (i.e. tipo de fertilizante, 
+    método de ensino, dose de medicamento).
+    \item Variabilidade \textbf{dentro dos grupos} (ou erro/resíduo): Captura a variação natural ou aleatória que ocorre mesmo entre unidades submetidas ao mesmo 
+    tratamento.
+\end{itemize}
+
+Se a variabilidade entre grupos for muito maior do que a esperada apenas pelo erro aleatório (ou seja, muito maior do que a variabilidade dentro dos grupos), 
+conclui-se que existe evidência estatística de que os tratamentos exercem efeito diferencial sobre a variável resposta.
+
+\subsection{Tipos Principais de ANOVA e Suas Aplicações}
+
+A ANOVA pode ser classificada conforme o número de fatores e o delineamento experimental:
+\begin{enumerate}
+    \item \textbf{ANOVA de um fator (One-Way ANOVA):} Compara médias de três ou mais grupos independentes formados por um único fator. Exemplos:
+    \begin{itemize}
+        \item Comparar o tempo médio de recuperação de pacientes submetidos a três diferentes tipos de fisioterapia.
+        \item Avaliar se o rendimento médio de plantas difere entre quatro níveis de irrigação.
+        \item Verificar se a satisfação média de alunos varia entre cinco modalidades de ensino (presencial, híbrido, EAD síncrono, EAD assíncrono, misto).
+    \end{itemize}
+    \item \textbf{ANOVA de dois fatores (Two-Way ANOVA):} Analisa simultaneamente o efeito de dois fatores e sua possível interação. Exemplos:
+    \begin{itemize}
+        \item Efeito do tipo de solo (fator A) e do nível de adubação (fator B) no crescimento de uma cultura, verificando também se o efeito da adubação depende do 
+        tipo de solo (interação).
+        \item Efeito do gênero (fator A) e do nível de escolaridade (fator B) na pontuação média em um teste de raciocínio.
+    \end{itemize}
+    \item \textbf{ANOVA de medidas repetidas (Repeated Measures ANOVA):} Usada quando a mesma unidade experimental é medida em múltiplos momentos ou condições 
+    (delineamento dentro de sujeitos). Exemplos:
+    \begin{itemize}
+        \item Medir a pressão arterial de pacientes em quatro momentos diferentes após administração de um medicamento.
+        \item Avaliar o desempenho de atletas em testes de força antes, durante e após um programa de treinamento.
+    \end{itemize}
+    \item \textbf{ANOVA fatorial e delineamentos mais complexos:} Incluem ANOVA de três ou mais fatores, ANOVA em blocos, ANOVA com medidas repetidas mistas, entre 
+    outros, permitindo investigar interações de ordem superior.
+\end{enumerate}
+
+Considere $k$ grupos independentes, com $n_i$ observações cada (delineamento balanceado: $n_1 = n_2 = \dots = n_k = n$). O modelo linear aditivo é:
+\[
+X_{ij} = \mu + \tau_i + \varepsilon_{ij}, \quad i=1,\dots,k;\ j=1,\dots,n
+\]
+onde:
+\begin{itemize}
+  \item $\mu$ é a média geral da população,
+  \item $\tau_i$ é o efeito fixo do $i$-ésimo tratamento (com $\sum \tau_i = 0$ em alguns parametrizamentos),
+  \item $\varepsilon_{ij} \sim \mathcal{N}(0, \sigma^2)$ são erros independentes e identicamente distribuídos.
+\end{itemize}
+Hipóteses:
+\begin{itemize}
+  \item $H_0: \tau_1 = \tau_2 = \dots = \tau_k = 0$  (ou equivalentemente: $\mu_1 = \mu_2 = \dots = \mu_k$)
+  \item $H_1$: pelo menos um $\tau_i \neq 0$
+\end{itemize}
+
+Outro importante é acerca da Decomposição da Variância Total. A ANOVA baseia-se na identidade fundamental de decomposição da soma de quadrados:
+\[
+\text{SST} = \text{SSA} + \text{SSE}
+\]
+onde:
+\begin{itemize}
+  \item $\text{SST}$ (Soma de Quadrados Total) = $\displaystyle\sum_{i=1}^k \sum_{j=1}^n (X_{ij} - \bar{X}_{..})^2$
+  \item $\text{SSA}$ (Soma de Quadrados entre grupos) = $n \displaystyle\sum_{i=1}^k (\bar{X}_{i.} - \bar{X}_{..})^2$
+  \item $\text{SSE}$ (Soma de Quadrados dentro dos grupos / erro) = $\displaystyle\sum_{i=1}^k \sum_{j=1}^n (X_{ij} - \bar{X}_{i.})^2$
+\end{itemize}
+Graus de liberdade:
+\begin{itemize}
+  \item gl$_{\text{total}}$ = $N - 1$ \quad ($N = kn$)
+  \item gl$_{\text{entre}}$ = $k - 1$
+  \item gl$_{\text{erro}}$ = $N - k = k(n - 1)$
+\end{itemize}
+Quadrados médios:
+\begin{itemize}
+  \item QM$_{\text{entre}}$ (MSA) = SSA / $(k - 1)$
+  \item QM$_{\text{erro}}$ (MSE) = SSE / $(N - k)$
+\end{itemize}
+
+\subsection{Suposições e Cuidados Metodológicos}
+
+Para que as conclusões da ANOVA sejam confiáveis, algumas suposições devem ser razoavelmente atendidas:
+\begin{itemize}
+    \item Independência das observações dentro e entre grupos.
+    \item Normalidade aproximada dos resíduos (dentro de cada grupo).
+    \item Homocedasticidade (variâncias populacionais iguais entre grupos), onde foram verificadas por testes como os de Levene ou Bartlett.
+\end{itemize}
+
+Quando essas suposições são violadas moderadamente, a ANOVA é relativamente robusta em amostras balanceadas e de tamanho moderado a grande. Em casos de desvios 
+graves, alternativas incluem:
+\begin{itemize}
+    \item Transformações de dados (log, raiz quadrada, Box-Cox).
+    \item Testes não paramétricos (Kruskal-Wallis para um fator; Friedman para medidas repetidas).
+    \item Modelos lineares generalizados ou modelos mistos.
+\end{itemize}
+
+\subsection{Exemplos Práticos em Diferentes Áreas}
+
+\begin{itemize}
+    \item \textbf{Medicina:} Comparar a redução média de glicemia em jejum após três diferentes esquemas dietéticos em pacientes com diabetes tipo 2.
+    \item \textbf{Psicologia/Educação:} Avaliar se o nível de ansiedade média difere entre alunos expostos a três tipos de avaliação (prova tradicional, prova oral, 
+    portfólio).
+    \item \textbf{Engenharia:} Testar se a resistência média à tração de concreto varia entre quatro proporções diferentes de cimento.
+    \item \textbf{Agronomia:} Comparar o rendimento médio de soja em cinco cultivares diferentes.
+    \item \textbf{Marketing:} Verificar se a intenção média de compra difere entre quatro embalagens distintas de um produto.
+\end{itemize}
+
+\section{Métricas de Erros}
+
+A avaliação do desempenho de modelos preditivos constitui uma etapa essencial no processo de modelagem estatística e de aprendizado de máquina. Quando o objetivo é 
+prever uma variável contínua (regressão), as métricas de erro quantificam o quanto as previsões do modelo se afastam dos valores reais observados. Essas métricas não 
+apenas permitem comparar diferentes modelos, mas também orientam a escolha do algoritmo mais adequado ao problema, revelam limitações do modelo e comunicam a 
+qualidade da previsão a tomadores de decisão não técnicos.
+
+\subsection{Origem Histórica}
+
+As métricas de erro têm raízes na estatística clássica do século XX, especialmente no trabalho de Fisher, Gauss e na teoria da estimação por mínimos quadrados. Com o 
+avanço do aprendizado de máquina nas últimas décadas, elas ganharam nova relevância, sendo adaptadas para grandes volumes de dados e aplicações práticas em áreas 
+como finanças, saúde, energia, logística e ciências sociais.
+
+A ideia central é simples: toda previsão gera um erro (ou resíduo), definido como a diferença entre o valor real ($y$) e o valor previsto ($\hat{y}$). Seja $y_i$ o 
+valor real da $i$-ésima observação e $\hat{y}_i$ o valor previsto pelo modelo. Define-se o erro (ou resíduo) como:
+\begin{eqnarray}
+    e_i = y_i - \hat{y}_i, \quad i=1,\dots,n
+\end{eqnarray}
+
+As métricas de erro agregam os $e_i$ de diferentes formas, destacando aspectos distintos do desempenho. do modelo:penho do modelo:
+\begin{itemize}
+    \item Magnitude média dos erros
+    \item Magnitude relativa
+    \item Sensibilidade a erros grandes (outliers)
+    \item Interpretabilidade em unidades originais ou percentuais
+\end{itemize}
+
+\subsection{Principais Métricas de Erro Absoluto}
+
+\begin{enumerate}
+    \item \textbf{Erro Absoluto Médio (Mean Absolute Error – MAE):} Calcula a média dos valores absolutos dos erros.
+    \[
+    \text{MAE} = \frac{1}{n} \sum_{i=1}^n |y_i - \hat{y}_i| = \frac{1}{n} \sum_{i=1}^n |e_i|
+    \]
+    Propriedades:
+    \begin{itemize}
+      \item Mantém as unidades originais da variável resposta.
+      \item Robusto a outliers (não eleva erros grandes).
+      \item Interpretação direta: média do erro absoluto.
+    \end{itemize}
+    
+    \item \textbf{Erro Quadrático Médio (Mean Squared Error – MSE):} Calcula a média dos quadrados dos erros.
+    \[
+    \text{MSE} = \frac{1}{n} \sum_{i=1}^n (y_i - \hat{y}_i)^2 = \frac{1}{n} \sum_{i=1}^n e_i^2
+    \]
+    Propriedades:
+    \begin{itemize}
+      \item Penaliza fortemente erros grandes (efeito quadrático).
+      \item Unidades quadradas (ex.: reais²), dificultando interpretação direta.
+      \item Base da otimização por mínimos quadrados.
+    \end{itemize}
+    
+    \item \textbf{Raiz do Erro Quadrático Médio (Root Mean Squared Error – RMSE):} É simplesmente a raiz quadrada do MSE.
+    \[
+    \text{RMSE} = \sqrt{\text{MSE}} = \sqrt{\frac{1}{n} \sum_{i=1}^n (y_i - \hat{y}_i)^2}
+    \]
+    Propriedades:
+    \begin{itemize}
+      \item Recupera as unidades originais.
+      \item Mantém a penalização quadrática a erros grandes.
+      \item Métrica mais comum em literatura e competições de machine learning.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Métricas Relativas e Percentuais}
+
+\begin{enumerate}
+    \item \textbf{Erro Percentual Absoluto Médio (Mean Absolute Percentage Error – MAPE):} Expressa o erro médio como porcentagem do valor real.
+    \[
+    \text{MAPE} = \frac{100}{n} \sum_{i=1}^n \left| \frac{y_i - \hat{y}_i}{y_i} \right| = \frac{100}{n} \sum_{i=1}^n \left| \frac{e_i}{y_i} \right|
+    \]    
+    Propriedades:
+    \begin{itemize}
+      \item Escala relativa (percentual), independente da unidade.
+      \item Interpretação: erro médio percentual.
+    \end{itemize}
+
+    \item \textbf{Erro Percentual Absoluto Mediano (Median Absolute Percentage Error – MdAPE):} Usa a mediana em vez da média dos erros percentuais. Mais robusto a 
+    outliers e valores extremos que distorcem o MAPE.
+    \[
+    \text{MdAPE} = \text{mediana}_{i=1,\dots,n} \left\{ \left| \frac{y_i - \hat{y}_i}{y_i} \right| \right\} \times 100
+    \]
+
+    \item \textbf{Erro Percentual Simétrico Absoluto Médio (Symmetric MAPE – sMAPE):} Corrige a assimetria do MAPE usando a média entre valor real e previsto no 
+    denominador. Recomendado quando há valores próximos de zero ou quando se deseja simetria entre superestimação e subestimação.
+    \[
+    \text{sMAPE} = \frac{200}{n} \sum_{i=1}^n \frac{|y_i - \hat{y}_i|}{|y_i| + |\hat{y}_i|}
+    \]    
+    Vantagem: simetria entre superestimação e subestimação; mais robusto quando valores próximos de zero.
+\end{enumerate}
+
+\subsection{Outras Métricas Relevantes}
+
+\begin{enumerate}
+    \item \textbf{Coeficiente de Determinação ($R^{2}$ e $R^{2}$ ajustado):} Embora não seja uma métrica de erro propriamente dita, mede a proporção da variância da 
+    variável resposta explicada pelo modelo. Se $R^{2} = 1$ indica ajuste perfeito; se $R^{2} = 0$ indica que o modelo não explica nada além da média. $R^{2}$ 
+    ajustado penaliza a inclusão de variáveis irrelevantes, sendo preferível em regressão múltipla.
+    \[
+    R^2 = 1 - \frac{\sum_{i=1}^n (y_i - \hat{y}_i)^2}{\sum_{i=1}^n (y_i - \bar{y})^2} = 1 - \frac{\text{SSE}}{\text{SST}}
+    \]
+    onde $\bar{y}$ é a média dos valores observados, SSE é a soma de quadrados dos erros e SST é a soma de quadrados total.
+    
+    Interpretação: proporção da variância explicada pelo modelo. $R^2 \in (-\infty, 1]$; valores próximos de 1 indicam bom ajuste.
+
+    No cenário de $R^{2}$ ajustado, têm-se que:
+    \[
+    R^2_{\text{adj}} = 1 - (1 - R^2) \frac{n-1}{n-p-1}
+    \]    
+    onde $p$ é o número de preditores. Penaliza a inclusão de variáveis irrelevantes.
+
+    \item \textbf{Erro Máximo (Max Error):} Identifica o maior erro absoluto cometido. Útil em aplicações críticas (ex.: segurança, controle de processos) onde um 
+    erro muito grande pode ser catastrófico.
+    \[
+    \text{Max Error} = \max_{i=1,\dots,n} |y_i - \hat{y}_i|
+    \]    
+    Útil para identificar o pior caso e aplicações críticas.
+
+    \item \textbf{Quantis de Erro:} Muito útil em planejamento de capacidade, estoques e previsão de demanda.
+\end{enumerate}
+
+\subsection{Escolha da Métrica Adequada ao Contexto}
+
+A escolha da métrica depende do objetivo do problema e do custo dos erros:
+\begin{itemize}
+    \item Quando erros grandes são muito mais custosos $\Rightarrow$ RMSE ou Max Error
+    \item Quando se deseja interpretabilidade em unidades originais e robustez $\Rightarrow$ MAE
+    \item Quando se compara desempenho entre variáveis de escalas diferentes $\Rightarrow$ MAPE ou sMAPE
+    \item Quando o foco é explicação da variância $\Rightarrow R^{2}$
+    \item Em previsão financeira ou de vendas $\Rightarrow$ combinação de MAE $+$ MAPE $+$ RMSE
+    \item Em aplicações de segurança ou monitoramento $\Rightarrow$ percentis altos do erro $+$ Max Error
+\end{itemize}
+
+\subsection{Limitações e Cuidados na Interpretação}
+
+Nenhuma métrica é perfeita. Algumas armadilhas comuns incluem:
+\begin{itemize}
+    \item Comparar modelos em conjuntos de dados diferentes usando apenas uma métrica.
+    \item Ignorar o efeito de outliers em métricas quadráticas.
+    \item Usar MAPE em séries com valores próximos de zero.
+    \item Confundir alto $R^{2}$ com bom poder preditivo fora da amostra (overfitting).
+\end{itemize}
+
+Para isso, algumas boas práticas são recomendadas:
+\begin{itemize}
+    \item Reportar múltiplas métricas (MAE, RMSE, MAPE, $R^{2}$).
+    \item Avaliar desempenho em conjunto de validação/teste (não apenas treinamento).
+    \item Usar validação cruzada para estimativas mais robustas.
+    \item Complementar com gráficos diagnósticos (resíduos vs. previstos, \textit{Q-Q plot}, histograma de erros).
+\end{itemize}
+
+\section{Aplicações em Análise e Ciência de Dados}
+
+Na área de Análise e Ciência de Dados, conceitos estatísticos fundamentais servem como pilares para extrair insights acionáveis de dados, validar hipóteses e 
+construir modelos preditivos robustos. Os tópicos discutidos até o momento são amplamente aplicados em cenários reais, como análise de dados de usuários, previsão de 
+demanda, segmentação de clientes e otimização de processos. Neste texto, revisamos brevemente cada conceito e apresentamos exemplos práticos em Ciência de Dados, com 
+foco em implementações computacionais usando Python. As bibliotecas como NumPy, SciPy, StatsModels e Scikit-learn facilitam essas análises, permitindo escalabilidade 
+para grandes conjuntos de dados.
+
+\subsection{Intervalos de Confiança}
+
+Os intervalos de confiança (IC) fornecem uma faixa de valores plausíveis para um parâmetro populacional, quantificando a incerteza em estimativas baseadas em 
+amostras. Em Ciência de Dados, eles são essenciais para relatar resultados com precisão, evitando interpretações pontuais que ignoram a variabilidade amostral.
+
+Como exemplo de aplicação, considere um cenário em que, na análise de dados de um e-commerce, um analista quer estimar a receita média por usuário (ARPU) em uma 
+campanha de marketing. Usando uma amostra de 1.000 transações, calcula-se o IC de 95\% para a média populacional, ajudando a decidir se o ARPU atende às metas de 
+negócio. Isso é útil em relatórios dashboards, onde a incerteza é comunicada visualmente. Usando SciPy para calcular o IC para a média de uma amostra de dados normais 
+(simulando receitas):
+\newline
+\begin{lstlisting}[style=python, caption={Cálculo do IC para a média de uma amostra de dados normais}, label={lst:lista_vetor}]
+import numpy as np
+from scipy import stats
+
+# Dados simulados: receitas de 1000 usuarios
+np.random.seed(42)
+receitas = np.random.normal(loc=50, scale=10, size=1000)  # Media 50, desvio 10
+
+# Calculo do IC de 95% para a media
+media = np.mean(receitas)
+sem = stats.sem(receitas)  # Erro padrao da media
+ic = stats.t.interval(confidence=0.95, df=len(receitas)-1, loc=media, scale=sem)
+
+print(f"Media amostral: {media:.2f}")
+print(f"IC 95%: ({ic[0]:.2f}, {ic[1]:.2f})")
+\end{lstlisting}
+Saída esperada: Média amostral $\approx$ 50,10; IC 95\% $\approx$ (49,50, 50,70). Isso indica que, com 95\% de confiança, o ARPU verdadeiro está nessa faixa.
+
+\subsection{Testes de Hipóteses}
+
+Os testes de hipóteses avaliam se há evidência estatística suficiente para rejeitar uma suposição nula sobre os dados, comparando uma estatística observada com sua 
+distribuição sob a nula.
+
+Em Ciência de Dados, testes de hipóteses são cruciais em experimentos A/B, como testar se uma nova interface de site aumenta a taxa de conversão. A hipótese nula 
+assume que não há diferença entre as versões A e B; se rejeitada, implementa-se a versão superior. Usando SciPy para um teste T de duas amostras independentes em 
+dados de conversão (grupo controle vs. tratamento):
+\newline
+\newline
+\newline
+\begin{lstlisting}[style=python, caption={Teste T de duas amostras independentes}, label={lst:lista_vetor}]
+import numpy as np
+from scipy import stats
+
+# Dados simulados: taxas de conversao (controle e tratamento)
+np.random.seed(42)
+controle = np.random.normal(0.10, 0.02, 500)  # Media 10%
+tratamento = np.random.normal(0.12, 0.02, 500)  # Media 12%
+
+# Teste T independente
+t_stat, p_val = stats.ttest_ind(controle, tratamento)
+
+print(f"Estatistica T: {t_stat:.2f}")
+print(f"P-valor: {p_val:.4f}")
+
+if p_val < 0.05:
+    print("Rejeita H0: Ha diferenca significativa na conversao.")
+else:
+    print("Nao rejeita H0: Sem diferenca significativa.")
+\end{lstlisting}
+Saída esperada: T $\approx$ -7,5, p-valor $\approx$ 0,0000, rejeitando $H_{0}$.
+
+\subsection{Teste T de Student}
+
+A distribuição $T$ de Student é usada para inferências sobre médias quando a variância populacional é desconhecida e a amostra é pequena, ajustando para maior 
+incerteza com caudas mais pesadas que a normal.
+
+Como exemplo em Ciência de Dados, aplica-se em análise de métricas de desempenho, como comparar o tempo médio de carregamento de páginas antes e após uma otimização, 
+com amostras limitadas de logs de usuários.
+\newline
+\begin{lstlisting}[style=python, caption={Tempo de carregamento de dados para teste T de Student}, label={lst:lista_vetor}]
+import numpy as np
+from scipy import stats
+
+# Dados simulados: tempos antes e apos otimizacao (10 amostras pareadas)
+np.random.seed(42)
+antes = np.random.normal(5, 1, 10)  # Media 5s
+depois = antes - np.random.normal(0.5, 0.2, 10)  # Reducao media de 0.5s
+
+# Teste T pareado
+t_stat, p_val = stats.ttest_rel(antes, depois)
+
+print(f"Estatistica T: {t_stat:.2f}")
+print(f"P-valor: {p_val:.4f}")
+\end{lstlisting}
+Saída esperada: T $\approx$ 9,0, p-valor $\approx$ 0,0000, indicando redução significativa no tempo.
+
+\subsection{Distribuição Binomial}
+
+A distribuição binomial modela o número de sucessos em n tentativas independentes com probabilidade p constante.
+
+Como exemplo de aplicação em Ciência de Dados, vemos abaixo um cenário onde é feita a modelagem de eventos binários como cliques em anúncios (i.e. prever a 
+probabilidade de $k$ conversões em 100 visualizações):
+\newline
+\begin{lstlisting}[style=python, caption={Eventos de cliques analisados por Distribuição Binomial}, label={lst:lista_vetor}]
+from scipy import stats
+
+# Parametros: n = 100 visualizacoes, p = 0.05 probabilidade de clique
+n, p = 100, 0.05
+
+# Probabilidade de exatamente 5 cliques
+prob_exata = stats.binom.pmf(k=5, n=n, p=p)
+
+# Probabilidade cumulativa de pelo menos 10 cliques
+prob_cum = 1 - stats.binom.cdf(k=9, n=n, p=p)
+
+print(f"P(exatamente 5 cliques): {prob_exata:.4f}")
+print(f"P(pelo menos 10 cliques): {prob_cum:.4f}")
+\end{lstlisting}
+Saída esperada: T $\approx$ 9,0, p-valor $\approx$ 0,0000, indicando redução significativa no tempo.
+
+\subsection{Distriuição de Poisson}
+
+A distribuição de Poisson modela contagens de eventos raros em intervalos fixos, com média $\lambda$. Como exemplo de Aplicação em Ciência de Dados, podemos realizar 
+a contagem de eventos, tais como acessos à um servidor por hora ou falhas em uma rede, ajudando em monitoramento e previsão de picos:
+\newline
+\begin{lstlisting}[style=python, caption={Acesso a servidores usando Distribuição de Poisson}, label={lst:lista_vetor}]
+from scipy import stats
+
+# Parametro: lambda = 3 acessos por hora
+lambda_ = 3
+
+# Probabilidade de exatamente 2 acessos
+prob_exata = stats.poisson.pmf(k=2, mu=lambda_)
+
+# Probabilidade cumulativa de mais de 5 acessos
+prob_cum = 1 - stats.poisson.cdf(k=5, mu=lambda_)
+
+print(f"P(Exatamente 2 acessos): {prob_exata:.4f}")
+print(f"P(Mais de 5 acessos): {prob_cum:.4f}")
+\end{lstlisting}
+Saída esperada: $P(2) \approx 0,224$, $P(\ge5) \approx 0,083$.
+
+\subsection{Qui-Quadrado}
+
+A distribuição qui-quadrado é usada em testes de aderência, independência e homogeneidade para dados categóricos. Como exemplo de aplicação, em Ciência de Dados, 
+testa associações em dados de usuários, como se gênero influencia preferência por produtos em um e-commerce:
+\newline
+\begin{lstlisting}[style=python, caption={Testes de aderência usando Qui-Quadrado}, label={lst:lista_vetor}]
+import numpy as np
+from scipy import stats
+
+# Dados simulados: tabela 2x3 (genero x preferencia de produto)
+tabela = np.array([[150, 100, 50],   # Masculino
+                   [120, 130, 50]])  # Feminino
+
+chi2_stat, p_val, dof, expected = stats.chi2_contingency(tabela)
+
+print(f"Estatistica Qui-Quad: {chi2_stat:.2f}")
+print(f"P-valor: {p_val:.4f}")
+print(f"Graus de liberdade: {dof}")
+\end{lstlisting}
+Saída esperada: $\chi^{2} \approx 5,8$, P-valor $\approx 0,055$.
+
+\subsection{ANOVA}
+
+A ANOVA compara médias entre múltiplos grupos, decompondo variância total em entre e dentro de grupos. Como exemplo de aplicação, em Ciência de Dados, podemos comparar 
+métricas de engajamento entre diferentes segmentos de usuários (ex.: regiões geográficas):
+\newline
+\begin{lstlisting}[style=python, caption={Usando StatsModels para one-way ANOVA}, label={lst:lista_vetor}]
+import numpy as np
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
+
+# Dados simulados: engajamento por regiao (3 grupos)
+regiao1 = np.random.normal(20, 5, 30)
+regiao2 = np.random.normal(25, 5, 30)
+regiao3 = np.random.normal(22, 5, 30)
+data = np.concatenate([regiao1, regiao2, regiao3])
+grupos = ['R1']*30 + ['R2']*30 + ['R3']*30
+
+# ANOVA
+model = ols('data ~ grupos', data=dict(data=data, grupos=grupos)).fit()
+anova_table = sm.stats.anova_lm(model, typ=2)
+
+print(anova_table)
+\end{lstlisting}
+Saída esperada: F-stat $\approx 10,2$, P-valor $\approx 0,0001$.
+
+\subsection{Métricas de Erros}
+
+Métricas de erros avaliam a precisão de modelos de regressão, quantificando discrepâncias entre previsto e real. Como exemplo de aplicação, em Ciência de Dados, 
+podemos avaliar modelos de previsão de vendas, comparando RMSE vs. MAE para decidir o melhor:
+\newline
+\begin{lstlisting}[style=python, caption={Métricas em um modelo de regressão linear simples}, label={lst:lista_vetor}]
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+# Dados simulados: vendas vs. marketing spend
+X = np.random.rand(100, 1) * 100  # Spend
+y = 50 + 2 * X.squeeze() + np.random.normal(0, 10, 100)  # Vendas
+
+# Modelo
+model = LinearRegression().fit(X, y)
+y_pred = model.predict(X)
+
+# Metricas
+mae = mean_absolute_error(y, y_pred)
+rmse = np.sqrt(mean_squared_error(y, y_pred))
+r2 = r2_score(y, y_pred)
+
+print(f"MAE: {mae:.2f}")
+print(f"RMSE: {rmse:.2f}")
+print(f"R-Quad: {r2:.2f}")
+\end{lstlisting}
+Saída esperada: MAE $\approx 7,8$, RMSE $\approx 9,8$ e $R^{2} \approx 0,96$.
 
 \end{document}
