@@ -1,10 +1,10 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2025.12.4)  5 DEC 2025 17:19
+This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2026.2.10)  10 FEB 2026 16:40
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
  %&-line parsing enabled.
-**/home/pedro/Documentos/CienciaDados/CienciaDados/Matematica/SeriesTemporais
-(/home/pedro/Documentos/CienciaDados/CienciaDados/Matematica/SeriesTemporais.tex
+**/home/pedro/Documentos/CienciaDados/Matematica/SeriesTemporais
+(/home/pedro/Documentos/CienciaDados/Matematica/SeriesTemporais.tex
 LaTeX2e <2021-11-15> patch level 1
 L3 programming layer <2022-01-21> (/usr/share/texlive/texmf-dist/tex/latex/base/article.cls
 Document Class: article 2021/10/04 v1.4n Standard LaTeX document class
@@ -48,7 +48,7 @@ Package: iftex 2020/03/06 v1.0d TeX engine tests
 Package: babel 2022/01/26 3.70 The Babel package
 \babel@savecnt=\count196
 \U@D=\dimen147
-\l@unhyphenated=\language8
+\l@unhyphenated=\language4
  (/usr/share/texlive/texmf-dist/tex/generic/babel/txtbabel.def)
 \bbl@readstream=\read2
 \bbl@dirlevel=\count197
@@ -58,7 +58,7 @@ Package babel Info: Making " an active character on input line 143.
 ) (/usr/share/texlive/texmf-dist/tex/generic/babel-portuges/brazil.ldf
 Language: portuges 2021/07/09 v1.2t Portuguese support from the babel system
 Package babel Info: Hyphen rules for 'brazil' set to \l@portuguese
-(babel)             (\language4). Reported on input line 111.
+(babel)             (\language3). Reported on input line 111.
 )) (/usr/share/texlive/texmf-dist/tex/latex/base/inputenc.sty
 Package: inputenc 2021/02/14 v1.3d Input encoding file
 \inpenc@prehook=\toks18
@@ -519,8 +519,7 @@ File: t1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 File: l3backend-pdftex.def 2022-01-12 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count325
 \l__pdf_internal_box=\box111
-)
-No file SeriesTemporais.aux.
+) (./SeriesTemporais.aux)
 \openout1 = `SeriesTemporais.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 75.
@@ -537,6 +536,7 @@ LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 75.
 LaTeX Font Info:    ... okay on input line 75.
 LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 75.
 LaTeX Font Info:    ... okay on input line 75.
+
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
 *geometry* verbose mode - [ preamble ] result:
@@ -624,20 +624,31 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 77.
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) [1
 
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}] [2] (./SeriesTemporais.aux) ) 
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}] [2]
+LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 121.
+ (/usr/share/texmf/tex/latex/lm/ts1lmr.fd
+File: ts1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
+)
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <12> on input line 121.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <8> on input line 121.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <6> on input line 121.
+ [3] [4] [5] [6] (./SeriesTemporais.aux) ) 
 Here is how much of TeX's memory you used:
- 26411 strings out of 480154
- 654716 string characters out of 5893788
- 1058887 words of memory out of 5000000
- 43951 multiletter control sequences out of 15000+600000
- 497620 words of font info for 51 fonts, out of 8000000 for 9000
- 61 hyphenation exceptions out of 8191
- 99i,6n,103p,784b,609s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/share/texmf/fonts/enc/dvips/lm/lm-ec.enc}</usr/share/texmf/fonts/type1/public/lm/lmbx12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr17.pfb>
-Output written on SeriesTemporais.pdf (2 pages, 78935 bytes).
+ 26483 strings out of 480227
+ 655969 string characters out of 5895370
+ 1068642 words of memory out of 5000000
+ 44000 multiletter control sequences out of 15000+600000
+ 529117 words of font info for 73 fonts, out of 8000000 for 9000
+ 16 hyphenation exceptions out of 8191
+ 99i,6n,103p,771b,609s stack positions out of 5000i,500n,10000p,200000b,80000s
+{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-ts1.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-ec.enc}</usr/share/texmf/fonts/type1/public/lm/lmbx12.pfb></usr/share/texmf/fonts/type1/public/lm/lmmi12.pfb></usr/share/texmf/fonts/type1/public/lm/lmmi8.pfb></usr/share/texmf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr17.pfb></usr/share/texmf/fonts/type1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/public/lm/lmri12.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy8.pfb>
+Output written on SeriesTemporais.pdf (6 pages, 167774 bytes).
 PDF statistics:
- 30 PDF objects out of 1000 (max. 8388607)
- 19 compressed objects within 1 object stream
+ 85 PDF objects out of 1000 (max. 8388607)
+ 55 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  13 words of extra memory for PDF output out of 10000 (max. 10000000)
 
