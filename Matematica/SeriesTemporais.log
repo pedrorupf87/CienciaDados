@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2026.2.10)  10 FEB 2026 16:40
+This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2026.2.12)  12 FEB 2026 16:54
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -48,7 +48,7 @@ Package: iftex 2020/03/06 v1.0d TeX engine tests
 Package: babel 2022/01/26 3.70 The Babel package
 \babel@savecnt=\count196
 \U@D=\dimen147
-\l@unhyphenated=\language4
+\l@unhyphenated=\language8
  (/usr/share/texlive/texmf-dist/tex/generic/babel/txtbabel.def)
 \bbl@readstream=\read2
 \bbl@dirlevel=\count197
@@ -58,7 +58,7 @@ Package babel Info: Making " an active character on input line 143.
 ) (/usr/share/texlive/texmf-dist/tex/generic/babel-portuges/brazil.ldf
 Language: portuges 2021/07/09 v1.2t Portuguese support from the babel system
 Package babel Info: Hyphen rules for 'brazil' set to \l@portuguese
-(babel)             (\language3). Reported on input line 111.
+(babel)             (\language5). Reported on input line 111.
 )) (/usr/share/texlive/texmf-dist/tex/latex/base/inputenc.sty
 Package: inputenc 2021/02/14 v1.3d Input encoding file
 \inpenc@prehook=\toks18
@@ -637,15 +637,15 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <6> on input line 121.
  [3] [4] [5] [6] (./SeriesTemporais.aux) ) 
 Here is how much of TeX's memory you used:
- 26483 strings out of 480227
- 655969 string characters out of 5895370
- 1068642 words of memory out of 5000000
- 44000 multiletter control sequences out of 15000+600000
+ 26483 strings out of 480154
+ 655969 string characters out of 5893788
+ 1068887 words of memory out of 5000000
+ 44007 multiletter control sequences out of 15000+600000
  529117 words of font info for 73 fonts, out of 8000000 for 9000
- 16 hyphenation exceptions out of 8191
+ 61 hyphenation exceptions out of 8191
  99i,6n,103p,771b,609s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-ts1.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-ec.enc}</usr/share/texmf/fonts/type1/public/lm/lmbx12.pfb></usr/share/texmf/fonts/type1/public/lm/lmmi12.pfb></usr/share/texmf/fonts/type1/public/lm/lmmi8.pfb></usr/share/texmf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr17.pfb></usr/share/texmf/fonts/type1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/public/lm/lmri12.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy8.pfb>
-Output written on SeriesTemporais.pdf (6 pages, 167774 bytes).
+Output written on SeriesTemporais.pdf (6 pages, 167432 bytes).
 PDF statistics:
  85 PDF objects out of 1000 (max. 8388607)
  55 compressed objects within 1 object stream
