@@ -1,0 +1,489 @@
+Abaixo, está o gabarito dos 50 exercícios. Os exemplos são voltados para o SQL Server e seguem a estrutura do banco de dados **Northwind**.
+
+---
+
+### Views
+
+```sql
+-- 1. Produtos com Nome da Categoria
+CREATE VIEW vw_ProdutosCategorias AS
+SELECT p.ProductName, c.CategoryName
+FROM Products p
+JOIN Categories c ON p.CategoryID = c.CategoryID;
+
+-- 2. Detalhes de Pedidos com Nome do Cliente
+CREATE VIEW vw_PedidosClientes AS
+SELECT o.OrderID, o.OrderDate, c.CompanyName AS CustomerName
+FROM Orders o
+JOIN Customers c ON o.CustomerID = c.CustomerID;
+
+-- 3. Total de Vendas por Vendedor
+CREATE VIEW vw_TotalVendasVendedor AS
+SELECT e.EmployeeID, e.FirstName, e.LastName, SUM(od.Quantity * od.UnitPrice) AS TotalSales
+FROM Employees e
+JOIN Orders o ON e.EmployeeID = o.EmployeeID
+JOIN [Order Details] od ON o.OrderID = od.OrderID
+GROUP BY e.EmployeeID, e.FirstName, e.LastName;
+
+-- 4. Número de Produtos em Estoque por Categoria
+CREATE VIEW vw_ProdutosPorCategoria AS
+SELECT c.CategoryName, COUNT(p.ProductID) AS ProductCount
+FROM Categories c
+JOIN Products p ON c.CategoryID = p.CategoryID
+WHERE p.UnitsInStock > 0
+GROUP BY c.CategoryName;
+
+-- 5. Total de Pedidos por Ano
+CREATE VIEW vw_TotalPedidosPorAno AS
+SELECT YEAR(OrderDate) AS OrderYear, COUNT(OrderID) AS TotalOrders
+FROM Orders
+GROUP BY YEAR(OrderDate);
+
+-- 6. Número de Pedidos por Cliente
+CREATE VIEW vw_PedidosPorCliente AS
+SELECT c.CustomerID, c.CompanyName, COUNT(o.OrderID) AS OrderCount
+FROM Customers c
+JOIN Orders o ON c.CustomerID = o.CustomerID
+GROUP BY c.CustomerID, c.CompanyName;
+
+-- 7. Funcionários com Pedidos
+CREATE VIEW vw_FuncionariosComPedidos AS
+SELECT DISTINCT e.EmployeeID, e.FirstName, e.LastName
+FROM Employees e
+JOIN Orders o ON e.EmployeeID = o.EmployeeID;
+
+-- 8. Produtos Nunca Pedidos
+CREATE VIEW vw_ProdutosNuncaPedidos AS
+SELECT p.ProductID, p.ProductName
+FROM Products p
+LEFT JOIN [Order Details] od ON p.ProductID = od.ProductID
+WHERE od.ProductID IS NULL;
+
+-- 9. Clientes com Pedidos no Último Mês
+CREATE VIEW vw_ClientesUltimoMes AS
+SELECT DISTINCT c.CustomerID, c.CompanyName
+FROM Customers c
+JOIN Orders o ON c.CustomerID = o.CustomerID
+WHERE o.OrderDate >= DATEADD(MONTH, -1, GETDATE());
+
+-- 10. Pedidos em Atraso
+CREATE VIEW vw_PedidosAtraso AS
+SELECT o.OrderID, o.OrderDate, o.RequiredDate, c.CompanyName AS CustomerName, e.FirstName AS SalesRep
+FROM Orders o
+JOIN Customers c ON o.CustomerID = c.CustomerID
+JOIN Employees e ON o.EmployeeID = e.EmployeeID
+WHERE o.ShippedDate IS NULL AND o.RequiredDate < GETDATE();
+
+-- 11. Valor Total dos Pedidos (incluindo Frete)
+CREATE VIEW vw_TotalPedidosComFrete AS
+SELECT o.OrderID, o.OrderDate, o.Freight, SUM(od.Quantity * od.UnitPrice) + o.Freight AS TotalValue
+FROM Orders o
+JOIN [Order Details] od ON o.OrderID = od.OrderID
+GROUP BY o.OrderID, o.OrderDate, o.Freight;
+
+-- 12. Produtos Mais Vendidos
+CREATE VIEW vw_ProdutosMaisVendidos AS
+SELECT p.ProductID, p.ProductName, SUM(od.Quantity) AS TotalQuantity
+FROM Products p
+JOIN [Order Details] od ON p.ProductID = od.ProductID
+GROUP BY p.ProductID, p.ProductName
+ORDER BY SUM(od.Quantity) DESC;
+
+-- 13. Média de Valor dos Pedidos por Mês
+CREATE VIEW vw_MediaPedidosPorMes AS
+SELECT YEAR(OrderDate) AS OrderYear, MONTH(OrderDate) AS OrderMonth, AVG(od.Quantity * od.UnitPrice) AS AvgOrderValue
+FROM Orders o
+JOIN [Order Details] od ON o.OrderID = od.OrderID
+GROUP BY YEAR(OrderDate), MONTH(OrderDate);
+
+-- 14. Produtos com Preço Acima da Média
+CREATE VIEW vw_ProdutosPrecoAcimaMedia AS
+SELECT p.ProductID, p.ProductName, p.UnitPrice
+FROM Products p
+WHERE p.UnitPrice > (SELECT AVG(UnitPrice) FROM Products);
+
+-- 15. Clientes com Mais de Um Pedido por Mês
+CREATE VIEW vw_ClientesPedidosMensal AS
+SELECT c.CustomerID, c.CompanyName, YEAR(o.OrderDate) AS OrderYear, MONTH(o.OrderDate) AS OrderMonth, COUNT(o.OrderID) AS OrderCount
+FROM Customers c
+JOIN Orders o ON c.CustomerID = o.CustomerID
+GROUP BY c.CustomerID, c.CompanyName, YEAR(o.OrderDate), MONTH(o.OrderDate)
+HAVING COUNT(o.OrderID) > 1;
+
+-- 16. Quantidade de Produtos por Fornecedor
+CREATE VIEW vw_ProdutosPorFornecedor AS
+SELECT s.SupplierID, s.CompanyName, COUNT(p.ProductID) AS ProductCount
+FROM Suppliers s
+JOIN Products p ON s.SupplierID = p.SupplierID
+GROUP BY s.SupplierID, s.CompanyName;
+
+-- 17. Países e Número de Clientes em Cada Um
+CREATE VIEW vw_ClientesPorPais AS
+SELECT Country, COUNT(CustomerID) AS CustomerCount
+FROM Customers
+GROUP BY Country;
+
+-- 18. Pedido Mais Caro por Cliente
+CREATE VIEW vw_PedidoMaisCaroCliente AS
+SELECT c.CustomerID, c.CompanyName, o.OrderID, SUM(od.Quantity * od.UnitPrice) AS TotalOrderValue
+FROM Customers c
+JOIN Orders o ON c.CustomerID = o.CustomerID
+JOIN [Order Details] od ON o.OrderID = od.OrderID
+GROUP BY c.CustomerID, c.CompanyName, o.OrderID
+HAVING SUM(od.Quantity * od.UnitPrice) = (
+    SELECT MAX(SUM(od.Quantity * od.UnitPrice))
+    FROM [Order Details] od
+    JOIN Orders o2 ON od.OrderID = o2.OrderID
+    WHERE o2.CustomerID = c.CustomerID
+);
+
+-- 19. Produtos Mais Caro e Mais Barato por Categoria
+CREATE VIEW vw_ProdutosPrecoPorCategoria AS
+SELECT c.CategoryID, c.CategoryName, MAX(p.UnitPrice) AS MaxPrice, MIN(p.UnitPrice) AS MinPrice
+FROM Categories c
+JOIN Products p ON c.CategoryID = p.CategoryID
+GROUP BY c.CategoryID, c.CategoryName;
+
+-- 20. Quantidade de Vendas por Mês por País
+CREATE VIEW vw_VendasMesPais AS
+SELECT c.Country, YEAR(o.OrderDate) AS OrderYear, MONTH(o.OrderDate) AS OrderMonth, COUNT(o.OrderID) AS TotalOrders
+FROM Customers c
+JOIN Orders o ON c.CustomerID = o.CustomerID
+GROUP BY c.Country, YEAR(o.OrderDate), MONTH(o.OrderDate);
+
+---
+
+Aqui está a continuação com as *functions* e *stored procedures* para os exercícios.
+
+---
+
+### Functions
+
+```sql
+-- 21. Função para Calcular o Preço com 10% de Desconto para um Produto
+CREATE FUNCTION fn_PrecoComDesconto (@ProductID INT)
+RETURNS MONEY
+AS
+BEGIN
+    DECLARE @Preco MONEY;
+    SELECT @Preco = UnitPrice * 0.9 FROM Products WHERE ProductID = @ProductID;
+    RETURN @Preco;
+END;
+
+-- 22. Função para Contar Pedidos de um Funcionário
+CREATE FUNCTION fn_TotalPedidosFuncionario (@EmployeeID INT)
+RETURNS INT
+AS
+BEGIN
+    RETURN (SELECT COUNT(OrderID) FROM Orders WHERE EmployeeID = @EmployeeID);
+END;
+
+-- 23. Função para Total Gasto por um Cliente
+CREATE FUNCTION fn_TotalGastoCliente (@CustomerID NVARCHAR(5))
+RETURNS MONEY
+AS
+BEGIN
+    RETURN (
+        SELECT SUM(od.Quantity * od.UnitPrice)
+        FROM Orders o
+        JOIN [Order Details] od ON o.OrderID = od.OrderID
+        WHERE o.CustomerID = @CustomerID
+    );
+END;
+
+-- 24. Função para Total de um Pedido
+CREATE FUNCTION fn_TotalPedido (@OrderID INT)
+RETURNS MONEY
+AS
+BEGIN
+    RETURN (
+        SELECT SUM(od.Quantity * od.UnitPrice)
+        FROM [Order Details] od
+        WHERE od.OrderID = @OrderID
+    );
+END;
+
+-- 25. Função para Total de Vendas por Ano
+CREATE FUNCTION fn_TotalVendasAno (@Ano INT)
+RETURNS MONEY
+AS
+BEGIN
+    RETURN (
+        SELECT SUM(od.Quantity * od.UnitPrice)
+        FROM Orders o
+        JOIN [Order Details] od ON o.OrderID = od.OrderID
+        WHERE YEAR(o.OrderDate) = @Ano
+    );
+END;
+
+-- 26. Função para Contar Pedidos Até uma Data
+CREATE FUNCTION fn_PedidosAteData (@Data DATE)
+RETURNS INT
+AS
+BEGIN
+    RETURN (SELECT COUNT(OrderID) FROM Orders WHERE OrderDate <= @Data);
+END;
+
+-- 27. Função para Nome do Fornecedor de um Produto
+CREATE FUNCTION fn_FornecedorProduto (@ProductID INT)
+RETURNS NVARCHAR(40)
+AS
+BEGIN
+    RETURN (
+        SELECT s.CompanyName
+        FROM Suppliers s
+        JOIN Products p ON s.SupplierID = p.SupplierID
+        WHERE p.ProductID = @ProductID
+    );
+END;
+
+-- 28. Função para Listar Produtos de uma Categoria
+CREATE FUNCTION fn_ProdutosCategoria (@CategoryID INT)
+RETURNS TABLE
+AS
+RETURN (
+    SELECT ProductID, ProductName
+    FROM Products
+    WHERE CategoryID = @CategoryID
+);
+
+-- 29. Função para Contar Itens em um Pedido
+CREATE FUNCTION fn_ItensPedido (@OrderID INT)
+RETURNS INT
+AS
+BEGIN
+    RETURN (SELECT COUNT(ProductID) FROM [Order Details] WHERE OrderID = @OrderID);
+END;
+
+-- 30. Função para Último Pedido de um Cliente
+CREATE FUNCTION fn_UltimoPedidoCliente (@CustomerID NVARCHAR(5))
+RETURNS TABLE
+AS
+RETURN (
+    SELECT TOP 1 OrderID, OrderDate
+    FROM Orders
+    WHERE CustomerID = @CustomerID
+    ORDER BY OrderDate DESC
+);
+
+-- 31. Função para Média de Preço dos Produtos
+CREATE FUNCTION fn_MediaPrecoProdutos ()
+RETURNS MONEY
+AS
+BEGIN
+    RETURN (SELECT AVG(UnitPrice) FROM Products);
+END;
+
+-- 32. Função para Cliente com Mais Pedidos
+CREATE FUNCTION fn_ClienteMaisPedidos ()
+RETURNS NVARCHAR(40)
+AS
+BEGIN
+    RETURN (
+        SELECT TOP 1 c.CompanyName
+        FROM Customers c
+        JOIN Orders o ON c.CustomerID = o.CustomerID
+        GROUP BY c.CompanyName
+        ORDER BY COUNT(o.OrderID) DESC
+    );
+END;
+
+-- 33. Função para Fornecedor com Mais Produtos
+CREATE FUNCTION fn_FornecedorMaisProdutos ()
+RETURNS NVARCHAR(40)
+AS
+BEGIN
+    RETURN (
+        SELECT TOP 1 s.CompanyName
+        FROM Suppliers s
+        JOIN Products p ON s.SupplierID = p.SupplierID
+        GROUP BY s.CompanyName
+        ORDER BY COUNT(p.ProductID) DESC
+    );
+END;
+
+-- 34. Função para Total de Produtos em uma Categoria
+CREATE FUNCTION fn_TotalProdutosCategoria (@CategoryID INT)
+RETURNS INT
+AS
+BEGIN
+    RETURN (SELECT COUNT(ProductID) FROM Products WHERE CategoryID = @CategoryID);
+END;
+
+-- 35. Função para Total de Pedidos por Mês e Ano
+CREATE FUNCTION fn_TotalPedidosMes (@Ano INT, @Mes INT)
+RETURNS INT
+AS
+BEGIN
+    RETURN (
+        SELECT COUNT(OrderID)
+        FROM Orders
+        WHERE YEAR(OrderDate) = @Ano AND MONTH(OrderDate) = @Mes
+    );
+END;
+
+-- 36. Função para Total de Clientes Atendidos por um Funcionário
+CREATE FUNCTION fn_TotalClientesFuncionario (@EmployeeID INT)
+RETURNS INT
+AS
+BEGIN
+    RETURN (
+        SELECT COUNT(DISTINCT CustomerID)
+        FROM Orders
+        WHERE EmployeeID = @EmployeeID
+    );
+END;
+
+-- 37. Função para Cliente com Maior Valor de Compras
+CREATE FUNCTION fn_ClienteMaiorValorCompras ()
+RETURNS NVARCHAR(40)
+AS
+BEGIN
+    RETURN (
+        SELECT TOP 1 c.CompanyName
+        FROM Customers c
+        JOIN Orders o ON c.CustomerID = o.CustomerID
+        JOIN [Order Details] od ON o.OrderID = od.OrderID
+        GROUP BY c.CompanyName
+        ORDER BY SUM(od.Quantity * od.UnitPrice) DESC
+    );
+END;
+
+-- 38. Função para Quantidade em Estoque de um Produto
+CREATE FUNCTION fn_QuantidadeEstoqueProduto (@ProductID INT)
+RETURNS INT
+AS
+BEGIN
+    RETURN (SELECT UnitsInStock FROM Products WHERE ProductID = @ProductID);
+END;
+
+-- 39. Função para Valor Médio dos Produtos de um Fornecedor
+CREATE FUNCTION fn_MediaPrecoFornecedor (@SupplierID INT)
+RETURNS MONEY
+AS
+BEGIN
+    RETURN (SELECT AVG(UnitPrice) FROM Products WHERE SupplierID = @SupplierID);
+END;
+
+-- 40. Função para Produto Mais Caro em Cada Categoria
+CREATE FUNCTION fn_ProdutoMaisCaroCategoria ()
+RETURNS TABLE
+AS
+RETURN (
+    SELECT CategoryID, ProductName, MAX(UnitPrice) AS MaxPrice
+    FROM Products
+    GROUP BY CategoryID, ProductName
+);
+
+---
+
+### Stored Procedures
+
+```sql
+-- 41. Inserir Novo Cliente
+CREATE PROCEDURE sp_InserirCliente
+    @CustomerID NVARCHAR(5),
+    @CompanyName NVARCHAR(40),
+    @ContactName NVARCHAR(30)
+AS
+BEGIN
+    INSERT INTO Customers (CustomerID, CompanyName, ContactName)
+    VALUES (@CustomerID, @CompanyName, @ContactName);
+END;
+
+-- 42. Inserir Novo Pedido para Cliente Existente
+CREATE PROCEDURE sp_InserirPedido
+    @CustomerID NVARCHAR(5),
+    @EmployeeID INT,
+    @OrderDate DATE,
+    @RequiredDate DATE
+AS
+BEGIN
+    INSERT INTO Orders (CustomerID, EmployeeID, OrderDate, RequiredDate)
+    VALUES (@CustomerID, @EmployeeID, @OrderDate, @RequiredDate);
+END;
+
+-- 43. Atualizar Preço de um Produto
+CREATE PROCEDURE sp_AtualizarPrecoProduto
+    @ProductID INT,
+    @NovoPreco MONEY
+AS
+BEGIN
+    UPDATE Products
+    SET UnitPrice = @NovoPreco
+    WHERE ProductID = @ProductID;
+END;
+
+-- 44. Excluir Pedido
+CREATE PROCEDURE sp_ExcluirPedido
+    @OrderID INT
+AS
+BEGIN
+    DELETE FROM Orders WHERE OrderID = @OrderID;
+END;
+
+-- 45. Excluir Cliente
+CREATE PROCEDURE sp_ExcluirCliente
+    @CustomerID NVARCHAR(5)
+AS
+BEGIN
+    DELETE FROM Customers WHERE CustomerID = @CustomerID;
+END;
+
+-- 46. Aplicar Desconto para Categoria Específica
+CREATE PROCEDURE sp_AplicarDescontoCategoria
+    @CategoryID INT,
+    @DescontoPercent DECIMAL(5, 2)
+AS
+BEGIN
+    UPDATE Products
+    SET UnitPrice = UnitPrice * (1 - @DescontoPercent / 100)
+    WHERE CategoryID = @CategoryID;
+END;
+
+-- 47. Listar Pedidos em um Determinado Mês
+CREATE PROCEDURE sp_ListarPedidosMes
+    @Ano INT,
+    @Mes INT
+AS
+BEGIN
+    SELECT OrderID, OrderDate, CustomerID
+    FROM Orders
+    WHERE YEAR(OrderDate) = @Ano AND MONTH(OrderDate) = @Mes;
+END;
+
+-- 48. Listar Produtos em Baixo Estoque
+CREATE PROCEDURE sp_ProdutosBaixoEstoque
+AS
+BEGIN
+    SELECT ProductID, ProductName, UnitsInStock
+    FROM Products
+    WHERE UnitsInStock < 10;
+END;
+
+-- 49. Total de Vendas de um Vendedor
+CREATE PROCEDURE sp_TotalVendasVendedor
+    @EmployeeID INT
+AS
+BEGIN
+    SELECT SUM(od.Quantity * od.UnitPrice) AS TotalSales
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    WHERE o.EmployeeID = @EmployeeID;
+END;
+
+-- 50. Histórico de Pedidos de um Cliente
+CREATE PROCEDURE sp_HistoricoPedidosCliente
+    @CustomerID NVARCHAR(5)
+AS
+BEGIN
+    SELECT Order
+
+ID, OrderDate, Freight
+    FROM Orders
+    WHERE CustomerID = @CustomerID
+    ORDER BY OrderDate;
+END;
+```
+
+Esses são os gabaritos dos 50 exercícios com *views*, *functions* e *stored procedures* para o banco de dados Northwind no SQL Server.

@@ -1,0 +1,469 @@
+-- Gabarito dos Exercícios 01 a 10
+
+-- 01. Consulta dinâmica com transação e log de erros
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'
+        SELECT OrderID, CustomerID, OrderDate
+        FROM Orders
+        WHERE CustomerID = @CustomerID
+          AND OrderDate BETWEEN @StartDate AND @EndDate';
+
+    EXEC sp_executesql @sql, 
+        N'@CustomerID NVARCHAR(5), @StartDate DATETIME, @EndDate DATETIME', 
+        @CustomerID = 'ALFKI', @StartDate = '1997-01-01', @EndDate = '1997-12-31';
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+
+-- 02. Inserção dinâmica de novos clientes com validação
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'
+        INSERT INTO Customers (CustomerID, CompanyName, ContactName, City, Country)
+        VALUES (@CustomerID, @CompanyName, @ContactName, @City, @Country)';
+
+    EXEC sp_executesql @sql, 
+        N'@CustomerID NVARCHAR(5), @CompanyName NVARCHAR(40), @ContactName NVARCHAR(30), @City NVARCHAR(15), @Country NVARCHAR(15)', 
+        @CustomerID = 'NEWC1', @CompanyName = 'New Customer Co.', @ContactName = 'John Doe', @City = 'Seattle', @Country = 'USA';
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+
+-- 03. Relatório de vendas com rollback
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'
+        SELECT CategoryName, SUM(OD.UnitPrice * OD.Quantity) AS TotalSales
+        FROM [Order Details] OD
+        INNER JOIN Products P ON OD.ProductID = P.ProductID
+        INNER JOIN Categories C ON P.CategoryID = C.CategoryID
+        GROUP BY CategoryName';
+
+    EXEC sp_executesql @sql;
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+
+-- 04. Atualização dinâmica de estoque
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'
+        UPDATE Products
+        SET UnitsInStock = UnitsInStock + @StockAdjustment
+        WHERE CategoryID = @CategoryID';
+
+    EXEC sp_executesql @sql, 
+        N'@StockAdjustment INT, @CategoryID INT', 
+        @StockAdjustment = 10, @CategoryID = 1;
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+
+-- 05. Exclusão dinâmica de pedidos
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'
+        DELETE FROM Orders
+        WHERE OrderDate < @CutoffDate';
+
+    EXEC sp_executesql @sql, 
+        N'@CutoffDate DATETIME', 
+        @CutoffDate = '1996-01-01';
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+
+-- 06. Alteração de preços com logs de erro
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'
+        UPDATE Products
+        SET UnitPrice = UnitPrice * (1 + @PercentageIncrease / 100.0)
+        WHERE CategoryID = @CategoryID';
+
+    EXEC sp_executesql @sql, 
+        N'@PercentageIncrease FLOAT, @CategoryID INT', 
+        @PercentageIncrease = 5, @CategoryID = 2;
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+
+-- 07. Transferência de estoque dinâmica
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'
+        UPDATE Products
+        SET UnitsInStock = UnitsInStock - @Quantity
+        WHERE ProductID = @SourceProductID;
+
+        UPDATE Products
+        SET UnitsInStock = UnitsInStock + @Quantity
+        WHERE ProductID = @DestinationProductID';
+
+    EXEC sp_executesql @sql, 
+        N'@Quantity INT, @SourceProductID INT, @DestinationProductID INT', 
+        @Quantity = 50, @SourceProductID = 1, @DestinationProductID = 2;
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+
+-- 08. Criação dinâmica de tabelas temporárias
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'
+        CREATE TABLE #TempProducts (
+            ProductID INT,
+            ProductName NVARCHAR(40),
+            UnitPrice MONEY
+        );';
+
+    EXEC sp_executesql @sql;
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+
+-- 09. Resumo dinâmico de vendas por cliente
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'
+        SELECT CustomerID, SUM(OD.UnitPrice * OD.Quantity) AS TotalSales
+        FROM [Order Details] OD
+        INNER JOIN Orders O ON OD.OrderID = O.OrderID
+        WHERE OrderDate BETWEEN @StartDate AND @EndDate
+        GROUP BY CustomerID';
+
+    EXEC sp_executesql @sql, 
+        N'@StartDate DATETIME, @EndDate DATETIME', 
+        @StartDate = '1997-01-01', @EndDate = '1997-12-31';
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+
+-- 10. Inserção dinâmica de detalhes de pedido
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'
+        INSERT INTO [Order Details] (OrderID, ProductID, UnitPrice, Quantity, Discount)
+        VALUES (@OrderID, @ProductID, @UnitPrice, @Quantity, @Discount)';
+
+    EXEC sp_executesql @sql, 
+        N'@OrderID INT, @ProductID INT, @UnitPrice MONEY, @Quantity INT, @Discount FLOAT', 
+        @OrderID = 10248, @ProductID = 11, @UnitPrice = 14.00, @Quantity = 12, @Discount = 0.0;
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+
+---
+
+### **11. Criação dinâmica de índices com validação**
+```sql
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'CREATE INDEX IDX_' + @ColumnName + N' ON ' + @TableName + N' (' + @ColumnName + N')';
+
+    EXEC sp_executesql @sql,
+        N'@TableName NVARCHAR(128), @ColumnName NVARCHAR(128)',
+        @TableName = 'Products', @ColumnName = 'UnitPrice';
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+```
+
+---
+
+### **12. Busca dinâmica com rollback automático**
+```sql
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'SELECT ' + @Columns + N' FROM ' + @TableName + N' WHERE ' + @Condition;
+
+    EXEC sp_executesql @sql,
+        N'@Columns NVARCHAR(MAX), @TableName NVARCHAR(MAX), @Condition NVARCHAR(MAX)',
+        @Columns = 'ProductID, ProductName', @TableName = 'Products', @Condition = 'UnitPrice > 20';
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+```
+
+---
+
+### **13. Cálculo dinâmico de descontos**
+```sql
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'UPDATE Products SET UnitPrice = UnitPrice * (1 - @Discount / 100.0) WHERE CategoryID = @CategoryID';
+
+    EXEC sp_executesql @sql,
+        N'@Discount FLOAT, @CategoryID INT',
+        @Discount = 10, @CategoryID = 1;
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+```
+
+---
+
+### **14. Consolidação de vendas com query dinâmica**
+```sql
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'INSERT INTO SalesSummary (CustomerID, TotalSales) 
+                 SELECT CustomerID, SUM(UnitPrice * Quantity) 
+                 FROM [Order Details] OD 
+                 INNER JOIN Orders O ON OD.OrderID = O.OrderID 
+                 WHERE OrderDate BETWEEN @StartDate AND @EndDate 
+                 GROUP BY CustomerID';
+
+    EXEC sp_executesql @sql,
+        N'@StartDate DATETIME, @EndDate DATETIME',
+        @StartDate = '1997-01-01', @EndDate = '1997-12-31';
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+```
+
+---
+
+### **15. Exclusão condicional de registros**
+```sql
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'DELETE FROM ' + @TableName + N' WHERE ' + @Condition;
+
+    EXEC sp_executesql @sql,
+        N'@TableName NVARCHAR(MAX), @Condition NVARCHAR(MAX)',
+        @TableName = 'Orders', @Condition = 'OrderDate < ''1996-01-01''';
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+```
+
+---
+
+### **16. Consulta personalizada com logs de execução**
+```sql
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'SELECT ' + @Columns + N' FROM ' + @TableName;
+
+    EXEC sp_executesql @sql,
+        N'@Columns NVARCHAR(MAX), @TableName NVARCHAR(MAX)',
+        @Columns = 'ProductID, ProductName, UnitPrice', @TableName = 'Products';
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+```
+
+---
+
+### **17. Alteração de estrutura de tabela dinamicamente**
+```sql
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'ALTER TABLE ' + @TableName + N' ADD ' + @ColumnName + N' ' + @DataType;
+
+    EXEC sp_executesql @sql,
+        N'@TableName NVARCHAR(MAX), @ColumnName NVARCHAR(MAX), @DataType NVARCHAR(MAX)',
+        @TableName = 'Products', @ColumnName = 'NewColumn', @DataType = 'NVARCHAR(50)';
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+```
+
+---
+
+### **18. Exportação dinâmica para tabela externa**
+```sql
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'INSERT INTO ' + @DestinationTable + N' (' + @Columns + N') 
+                 SELECT ' + @Columns + N' FROM ' + @SourceTable + N' WHERE ' + @Condition;
+
+    EXEC sp_executesql @sql,
+        N'@DestinationTable NVARCHAR(MAX), @Columns NVARCHAR(MAX), @SourceTable NVARCHAR(MAX), @Condition NVARCHAR(MAX)',
+        @DestinationTable = 'BackupProducts', @Columns = 'ProductID, ProductName, UnitPrice', @SourceTable = 'Products', @Condition = 'UnitPrice > 50';
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+```
+
+---
+
+### **19. Atualização em lote com critérios dinâmicos**
+```sql
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'UPDATE ' + @TableName + N' SET ' + @UpdateStatement + N' WHERE ' + @Condition;
+
+    EXEC sp_executesql @sql,
+        N'@TableName NVARCHAR(MAX), @UpdateStatement NVARCHAR(MAX), @Condition NVARCHAR(MAX)',
+        @TableName = 'Products', @UpdateStatement = 'UnitPrice = UnitPrice * 1.1', @Condition = 'CategoryID = 3';
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+```
+
+---
+
+### **20. Relatório de desempenho com query dinâmica**
+```sql
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = N'SELECT EmployeeID, COUNT(OrderID) AS TotalOrders, SUM(UnitPrice * Quantity) AS TotalSales
+                 FROM Orders O
+                 INNER JOIN [Order Details] OD ON O.OrderID = OD.OrderID
+                 WHERE OrderDate BETWEEN @StartDate AND @EndDate
+                 GROUP BY EmployeeID';
+
+    EXEC sp_executesql @sql,
+        N'@StartDate DATETIME, @EndDate DATETIME',
+        @StartDate = '1997-01-01', @EndDate = '1997-12-31';
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ErrorLog (ErrorMessage, ErrorDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+END CATCH;
+```
+
+--- 
+
+Caso precise de ajustes ou explicações, é só avisar!

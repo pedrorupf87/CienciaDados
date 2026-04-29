@@ -1,0 +1,142 @@
+Aqui está uma lista de 60 exercícios de nível muito avançado em SQL Server, utilizando o banco de dados Northwind. Os exercícios são focados em **cursores**, **CTEs (Common Table Expressions)** e **tratamento de erros**, explorando cenários complexos e desafiadores. O banco Northwind inclui tabelas como `Customers`, `Orders`, `Order Details`, `Products`, `Employees`, `Suppliers`, entre outras. Cada exercício foi projetado para exigir lógica avançada e boas práticas de programação em T-SQL.
+
+---
+
+### **Exercícios com Cursores (1-20)**
+
+1. Crie um cursor que percorra a tabela `Orders` e atualize o campo `Freight` com um aumento de 10% para pedidos com valor total (calculado a partir de `Order Details`) superior a $500, registrando as alterações em uma tabela de log.
+
+2. Utilize um cursor para iterar sobre a tabela `Customers` e inserir em uma tabela temporária os clientes que fizeram mais de 5 pedidos no último ano, incluindo o total gasto.
+
+3. Escreva um cursor que percorra a tabela `Products` e reduza o preço (`UnitPrice`) em 5% para produtos com estoque (`UnitsInStock`) superior a 100, tratando erros caso o preço fique negativo.
+
+4. Crie um cursor que percorra a tabela `Orders` e, para cada pedido, insira em uma tabela de auditoria o número do pedido e a quantidade total de itens (somada de `Order Details`), com tratamento de erros para valores nulos.
+
+5. Implemente um cursor que percorra a tabela `Employees` e gere um relatório em uma nova tabela com o total de pedidos atendidos por cada funcionário no último trimestre, ordenado por desempenho.
+
+6. Desenvolva um cursor que percorra a tabela `Suppliers` e atualize o campo `Phone` para um formato padronizado (ex.: +XX-XXXX-XXXX), com tratamento de erros para telefones inválidos.
+
+7. Use um cursor para iterar sobre `Order Details` e aplicar um desconto de 15% no `UnitPrice` para produtos cujo pedido tenha mais de 10 unidades, registrando as alterações em uma tabela de log.
+
+8. Crie um cursor que percorra a tabela `Orders` e cancele (atualize como "Cancelado") pedidos não enviados (`ShippedDate IS NULL`) há mais de 30 dias, com tratamento de erros para datas inválidas.
+
+9. Escreva um cursor que percorra a tabela `Products` e insira em uma tabela de histórico os produtos descontinuados (`Discontinued = 1`), incluindo o nome do fornecedor (`Suppliers`).
+
+10. Implemente um cursor que percorra a tabela `Customers` e envie um "e-mail" (simulado por inserção em uma tabela) para clientes que não fizeram pedidos nos últimos 6 meses.
+
+11. Use um cursor para iterar sobre `Orders` e recalcular o valor total de cada pedido somando `UnitPrice * Quantity * (1 - Discount)` de `Order Details`, atualizando uma coluna personalizada.
+
+12. Crie um cursor que percorra a tabela `Employees` e gere uma hierarquia de subordinados (usando `ReportsTo`), inserindo os resultados em uma tabela temporária.
+
+13. Desenvolva um cursor que percorra `Order Details` e identifique produtos vendidos acima do preço médio da categoria, registrando os casos em uma tabela de exceções.
+
+14. Utilize um cursor para iterar sobre `Orders` e criar uma tabela de resumo com o total de pedidos por cliente e o valor médio do frete, com tratamento de erros para divisões por zero.
+
+15. Escreva um cursor que percorra a tabela `Products` e aumente o estoque (`UnitsInStock`) em 20% para produtos com menos de 10 unidades, evitando valores negativos.
+
+16. Crie um cursor que percorra `Customers` e gere um ranking dos 10 clientes com maior número de pedidos, inserindo os resultados em uma tabela permanente.
+
+17. Implemente um cursor que percorra `Orders` e marque como "Prioritário" pedidos com mais de 50 itens no total, atualizando uma nova coluna personalizada.
+
+18. Use um cursor para iterar sobre `Suppliers` e calcular o valor total de produtos fornecidos (somando `UnitPrice * UnitsInStock`), com tratamento de erros para valores ausentes.
+
+19. Desenvolva um cursor que percorra `Order Details` e aplique um aumento de 5% no preço para pedidos realizados em feriados (ex.: 25/12), registrando as mudanças.
+
+20. Crie um cursor que percorra `Employees` e calcule o tempo de serviço (em anos) com base em `HireDate`, inserindo os resultados em uma tabela de análise.
+
+---
+
+### **Exercícios com CTEs (21-40)**
+
+21. Use uma CTE para calcular o valor total de vendas por categoria de produto (`Categories`) em 1997, ordenando do maior para o menor.
+
+22. Crie uma CTE recursiva para construir a hierarquia completa de funcionários com base no campo `ReportsTo`, exibindo o nível de cada funcionário.
+
+23. Desenvolva uma CTE que identifique os 5 clientes com maior gasto médio por pedido, incluindo o número de pedidos realizados.
+
+24. Utilize uma CTE para calcular o total de itens vendidos por fornecedor (`Suppliers`), considerando apenas produtos não descontinuados.
+
+25. Escreva uma CTE que mostre o crescimento mensal de vendas (baseado em `Orders`) ao longo de 1998, comparando com o mês anterior.
+
+26. Crie uma CTE para listar os produtos mais vendidos por região de entrega (`ShipRegion`), limitando aos 3 primeiros por região.
+
+27. Implemente uma CTE que calcule o lucro por pedido (considerando `UnitPrice`, `Quantity` e `Discount`), ordenando os 10 mais lucrativos.
+
+28. Use uma CTE para identificar clientes que fizeram pedidos em todas as categorias de produtos disponíveis.
+
+29. Desenvolva uma CTE recursiva que calcule o total acumulado de vendas por dia em um determinado mês, com base em `OrderDate`.
+
+30. Crie uma CTE que mostre os fornecedores (`Suppliers`) com o maior número de produtos em estoque baixo (`UnitsInStock < 10`).
+
+31. Utilize uma CTE para calcular a média de frete por país de entrega (`ShipCountry`), destacando os países acima da média global.
+
+32. Escreva uma CTE que identifique os produtos com maior variação de preço entre pedidos (baseado em `Order Details`).
+
+33. Crie uma CTE para listar os empregados que atenderam mais pedidos do que a média geral dos funcionários.
+
+34. Implemente uma CTE que calcule o total de vendas por trimestre e ano, incluindo uma coluna com o percentual em relação ao ano anterior.
+
+35. Use uma CTE para encontrar os clientes que compraram os mesmos produtos em pedidos diferentes (interseção de `Order Details`).
+
+36. Desenvolva uma CTE que mostre a quantidade de pedidos por cliente e o tempo médio entre pedidos consecutivos.
+
+37. Crie uma CTE recursiva para calcular o caminho completo de entrega dos pedidos, concatenando `ShipCity`, `ShipRegion` e `ShipCountry`.
+
+38. Utilize uma CTE para listar os produtos com estoque zerado (`UnitsInStock = 0`) e o total de pedidos pendentes (`UnitsOnOrder`).
+
+39. Escreva uma CTE que calcule o ticket médio por funcionário e destaque aqueles com desempenho acima da média da empresa.
+
+40. Crie uma CTE para identificar os 5 produtos mais vendidos em cada categoria, incluindo o percentual de vendas em relação ao total da categoria.
+
+---
+
+### **Exercícios com Tratamento de Erros (41-60)**
+
+41. Crie um procedimento com TRY-CATCH que atualize o preço dos produtos em `Products`, evitando que o `UnitPrice` fique negativo, com log de erros.
+
+42. Escreva um script com TRY-CATCH que divida o frete (`Freight`) por zero para pedidos inválidos, capturando o erro e inserindo em uma tabela de log.
+
+43. Desenvolva um procedimento com TRY-CATCH que insira novos clientes em `Customers`, validando duplicatas de `CustomerID` e registrando falhas.
+
+44. Use TRY-CATCH em um cursor que percorra `Orders` e tente atualizar `ShippedDate` para uma data futura inválida, logando os erros.
+
+45. Crie um script com TRY-CATCH que calcule o total de vendas por categoria, tratando erros de conversão de tipos de dados em `Order Details`.
+
+46. Implemente um procedimento com TRY-CATCH que recalcule descontos em `Order Details`, evitando valores negativos e registrando exceções.
+
+47. Escreva um script com TRY-CATCH que tente excluir produtos descontinuados de `Products`, capturando erros de chave estrangeira.
+
+48. Desenvolva um procedimento com TRY-CATCH que insira pedidos duplicados em `Orders`, tratando erros de violação de chave primária.
+
+49. Use TRY-CATCH em uma CTE que calcule o lucro por pedido, lidando com valores nulos em `UnitPrice` ou `Quantity`.
+
+50. Crie um cursor com TRY-CATCH que percorra `Employees` e tente atualizar `HireDate` para uma data inválida, logando os erros.
+
+51. Implemente um script com TRY-CATCH que atualize o estoque (`UnitsInStock`) com valores inválidos, capturando e registrando erros.
+
+52. Escreva um procedimento com TRY-CATCH que tente inserir fornecedores duplicados em `Suppliers`, tratando erros de unicidade.
+
+53. Desenvolva um script com TRY-CATCH que calcule o tempo de entrega médio por pedido, lidando com datas ausentes (`ShippedDate`).
+
+54. Use TRY-CATCH em uma CTE que divida o total de vendas por zero ao calcular percentuais, registrando o erro.
+
+55. Crie um cursor com TRY-CATCH que percorra `Order Details` e tente aplicar descontos maiores que 100%, logando falhas.
+
+56. Implemente um procedimento com TRY-CATCH que atualize o `Phone` em `Customers` com formatos inválidos, capturando erros.
+
+57. Escreva um script com TRY-CATCH que tente inserir produtos com `CategoryID` inexistente, tratando erros de integridade.
+
+58. Desenvolva um procedimento com TRY-CATCH que calcule o total de pedidos por cliente, lidando com overflows em grandes volumes.
+
+59. Use TRY-CATCH em uma CTE que tente acessar uma tabela inexistente (`Orders2`), registrando o erro em uma tabela de log.
+
+60. Crie um cursor com TRY-CATCH que percorra `Products` e tente dividir `UnitsInStock` por zero, capturando e logando os erros.
+
+---
+
+### **Notas**
+- Esses exercícios assumem que você tem acesso ao banco Northwind e pode criar tabelas auxiliares (como logs ou temporárias) conforme necessário.
+- Para testar, ajuste os cenários conforme a estrutura exata do seu banco (ex.: nomes de colunas ou tipos de dados).
+- Os exercícios combinam complexidade técnica e lógica de negócios, ideais para prática avançada em SQL Server.
+
+Se deseja a implementação de algum desses exercícios em código T-SQL, posso fornecer exemplos detalhados! Qual você gostaria que eu elaborasse?

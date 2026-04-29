@@ -1,0 +1,170 @@
+Aqui está uma lista com 10 exercícios avançados de DML (Data Manipulation Language) usando o banco de dados **Northwind**. Esses exercícios focam em operações avançadas como manipulação de dados, joins complexos, subconsultas e atualizações. 
+
+---
+
+### **Exercícios Avançados de DML no SQL Server (Northwind)**
+
+1. **Inserção Condicional em Tabelas**
+   - Insira os registros de novos produtos na tabela `Products` somente se não existirem produtos com o mesmo nome já cadastrados. Use a tabela temporária abaixo como base para os dados a serem inseridos:
+     ```sql
+     CREATE TABLE #NovosProdutos (
+         ProductName NVARCHAR(50),
+         SupplierID INT,
+         CategoryID INT,
+         UnitPrice DECIMAL(10, 2)
+     );
+
+     INSERT INTO #NovosProdutos (ProductName, SupplierID, CategoryID, UnitPrice)
+     VALUES ('New Product A', 1, 1, 15.50),
+            ('New Product B', 2, 2, 25.00);
+     ```
+
+2. **Atualização em Lote**
+   - Aumente o preço dos produtos em 10% para aqueles cuja categoria pertence ao grupo de `Seafood`. Certifique-se de não alterar produtos descontinuados.
+
+3. **Remoção com Subconsulta**
+   - Exclua todos os registros de `Order Details` para produtos que não foram vendidos em nenhum pedido nos últimos 2 anos.
+
+4. **Join com Atualização**
+   - Atualize a tabela `Orders` para definir o campo `ShippedDate` como a data atual para todos os pedidos com status "Shipped" que ainda têm esse campo nulo. Use um join com `Order Details` para garantir que esses pedidos tenham pelo menos um item.
+
+5. **Inserção com Subconsulta**
+   - Insira na tabela `Order Details` uma linha com os seguintes dados: o ID do último pedido criado, o produto mais vendido do último ano e uma quantidade de 10 unidades. Use subconsultas para obter o pedido e o produto.
+
+6. **Transação com Controle de Erros**
+   - Crie uma transação que:
+     1. Insira um novo fornecedor na tabela `Suppliers`.
+     2. Insira um novo produto vinculado a esse fornecedor na tabela `Products`.
+     3. Faça rollback se qualquer uma das operações falhar.
+
+7. **Manipulação de Hierarquias**
+   - Identifique os produtos que têm preços acima do preço médio da sua categoria e duplique o valor do desconto na tabela `Order Details` para essas condições. 
+
+8. **Deleção com Join**
+   - Exclua todos os clientes (`Customers`) que nunca fizeram pedidos (`Orders`), certificando-se de que a exclusão não afete a integridade referencial.
+
+9. **Consulta e Atualização de Dados Não Correspondentes**
+   - Atualize o nome da empresa (`CompanyName`) na tabela `Suppliers` para incluir o prefixo "[Inactive]" em fornecedores que não têm produtos ativos.
+
+10. **Inserção em Cascata**
+    - Para cada novo pedido inserido na tabela `Orders`, insira automaticamente na tabela `Order Details` um item padrão com um produto de ID 1, quantidade de 5 e preço unitário padrão. 
+
+---
+
+### Dicas para Resolver os Exercícios
+- Utilize **CTEs** para consultas intermediárias, especialmente em cenários complexos.
+- Explore transações com `BEGIN TRANSACTION`, `COMMIT`, e `ROLLBACK` para garantir a consistência dos dados.
+- Certifique-se de usar as funções de sistema, como `GETDATE()` ou `ROW_NUMBER()`, onde aplicável.
+
+Caso precise de soluções ou explicações detalhadas, é só pedir! 😊
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+Segue a lista de exercícios avançados de **procedures** utilizando **cursores** com o banco **Northwind**:
+
+---
+
+### **Exercícios Avançados de Procedures e Cursores (Northwind)**
+
+11. **Cursor para Atualizar Preços por Categoria**
+   - Crie uma procedure que percorra todas as categorias e aumente os preços dos produtos de cada categoria em uma porcentagem específica recebida como parâmetro.
+
+12. **Inserção em Massa com Cursor**
+   - Crie uma procedure que, utilizando um cursor, insira novos produtos em categorias específicas. As informações dos produtos (nome, preço, fornecedor, etc.) devem ser lidas de uma tabela temporária.
+
+13. **Atualização Condicional com Cursor**
+   - Desenvolva uma procedure que percorra os pedidos (`Orders`) e atualize o campo `Freight` para o dobro do valor atual se o país do cliente for "Brazil".
+
+14. **Exclusão com Cursor**
+   - Crie uma procedure que utilize um cursor para excluir produtos descontinuados (`Discontinued = 1`) que não têm pedidos associados nos últimos 5 anos.
+
+15. **Processamento de Descontos com Cursor**
+   - Crie uma procedure que calcule e aplique um desconto progressivo nos produtos de pedidos que têm mais de 5 itens. O desconto deve aumentar conforme a quantidade de itens no pedido.
+
+16. **Gerenciamento de Estoque**
+   - Crie uma procedure que percorra os produtos com baixo estoque (quantidade abaixo de 10) e gere um registro de "reabastecimento" em uma tabela auxiliar, contendo o ID do produto, a quantidade necessária e a data.
+
+17. **Envio de Notificações por Cursor**
+   - Crie uma procedure que percorra os clientes sem pedidos realizados nos últimos 2 anos e insira uma mensagem de notificação em uma tabela de comunicação.
+
+18. **Cálculo de Receita por Produto**
+   - Desenvolva uma procedure que use um cursor para calcular a receita total gerada por cada produto e armazene os resultados em uma tabela auxiliar.
+
+19. **Transferência de Dados por Cursor**
+   - Crie uma procedure que copie dados de produtos de fornecedores específicos para uma tabela de backup, utilizando um cursor para iterar pelos fornecedores.
+
+20. **Atualização de Fretes com Base no Peso**
+    - Desenvolva uma procedure que percorra os pedidos e, utilizando um cursor, atualize o campo `Freight` com base no peso total dos itens do pedido. O peso total pode ser calculado multiplicando a quantidade do produto pelo peso unitário, armazenado na tabela `Products`.
+
+---
+
+Caso precise de ajuda para implementar as soluções, posso criar o gabarito ou explicar os conceitos por trás de cada exercício! 😊
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Segue uma lista de **10 exercícios avançados** que combinam **cursores**, **transações** e **tratamento de erros** no banco **Northwind**. Esses exercícios exploram cenários reais, como consistência de dados e recuperação de falhas.
+
+---
+
+### 21. Inserção Segura com Cursores e Transação**  
+Crie um procedimento que percorra os produtos da tabela `Products` e insira registros na tabela `DiscontinuedProducts` para os produtos descontinuados. Use uma transação para garantir a consistência, com rollback em caso de erro.
+
+---
+
+### 22. Atualização de Preços com Controle de Erros**  
+Desenvolva um procedimento que percorra os produtos por categoria, aplicando um aumento de 5% no preço. Caso uma categoria falhe (ex.: divisão por zero ou valores nulos), a transação deve reverter somente para os produtos daquela categoria, continuando para as próximas.
+
+---
+
+### 23. Exclusão em Cascata com Cursores**  
+Crie um procedimento que exclua pedidos antigos (mais de 5 anos) e todas as informações relacionadas (`Order Details`). Use cursores para processar os pedidos e implemente rollback para reverter em caso de erro.
+
+---
+
+### 24. Transferência de Dados entre Tabelas**  
+Desenvolva um procedimento que percorra os clientes na tabela `Customers` e transfira os dados para uma tabela `ArchivedCustomers` caso eles não tenham realizado pedidos nos últimos 3 anos. Use transação para garantir a consistência.
+
+---
+
+### 25. Gerenciamento de Estoque com Cursores**  
+Crie um procedimento que percorra os produtos com estoque abaixo de 10 unidades, registre o reabastecimento na tabela `RestockLog`, e atualize o estoque para 20 unidades. Reverta todas as alterações se ocorrer qualquer erro.
+
+---
+
+### 26. Atualização de Fretes por Regiões**  
+Implemente um procedimento que percorra os pedidos (`Orders`) por região de destino (`ShipRegion`) e ajuste os valores de frete (`Freight`) com base em uma lógica específica. Em caso de erro, reverta os ajustes feitos para aquela região e continue para as demais.
+
+---
+
+### 27. Reativação de Produtos Descontinuados**  
+Crie um procedimento que percorra os produtos descontinuados na tabela `Products` e os reative caso tenham sido vendidos nos últimos 2 anos. Use transação para garantir que todas as reativações sejam feitas corretamente e reverta em caso de erro.
+
+---
+
+### 28. Controle de Estoque por Pedido**  
+Implemente um procedimento que percorra os itens de um pedido (`Order Details`), reduza o estoque do produto correspondente na tabela `Products` e registre o ajuste na tabela `StockAdjustments`. Reverta todos os ajustes se algum erro ocorrer.
+
+---
+
+### 29. Cálculo de Receita por Categoria**  
+Crie um procedimento que percorra as categorias na tabela `Categories`, calcule a receita total gerada pelos produtos de cada categoria (baseado nos pedidos) e insira os resultados na tabela `CategoryRevenue`. Garanta que nenhuma categoria fique com dados inconsistentes em caso de falha.
+
+---
+
+### 30. Migração de Pedidos para Arquivo**  
+Implemente um procedimento que percorra pedidos concluídos (`Orders`) há mais de 10 anos e os mova para uma tabela de arquivo (`ArchivedOrders`), junto com seus itens. Use transação para mover os dados com integridade e implemente rollback se qualquer etapa falhar.
+
+---
+
+### **Dicas para Resolver**
+1. **Uso de Cursores**: Utilize `DECLARE CURSOR` e `FETCH NEXT` para processar linha a linha.
+2. **Transações**: Envolva as operações dentro de `BEGIN TRANSACTION`, `COMMIT`, e `ROLLBACK`.
+3. **Tratamento de Erros**: Use `TRY...CATCH` para capturar erros e realizar rollback se necessário.
+4. **Boa Prática**: Sempre libere os cursores com `CLOSE` e `DEALLOCATE`.
+
+Se precisar do gabarito de algum ou todos os exercícios, é só pedir! 😊

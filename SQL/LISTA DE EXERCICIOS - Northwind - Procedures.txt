@@ -1,0 +1,55 @@
+Aqui estão 10 exercícios avançados que exploram **procedures** usando o banco de dados **Northwind**. Cada exercício foca em aspectos avançados, como manipulação de dados, controle de fluxo e uso de parâmetros. 
+
+---
+
+### **1. Procedure com parâmetros de entrada e saída**
+Crie uma procedure que receba o nome de um funcionário como entrada e devolva o número de pedidos que ele processou como saída.
+
+---
+
+### **2. Procedure com lógica condicional**
+Crie uma procedure que receba o ID de um pedido. Se o pedido já estiver entregue, exiba uma mensagem indicando isso. Caso contrário, atualize a data de entrega para o dia atual.
+
+---
+
+### **3. Procedure com tabelas temporárias**
+Crie uma procedure que gere um relatório de vendas anuais para um ano específico, utilizando tabelas temporárias. O relatório deve incluir o total de vendas por produto e o total geral.
+
+---
+
+### **4. Procedure que utiliza transações**
+Implemente uma procedure que atualize os preços de todos os produtos de uma categoria específica em uma porcentagem definida. Certifique-se de usar transações para garantir que a operação seja atômica.
+
+---
+
+### **5. Procedure com loop**
+Crie uma procedure que calcule e armazene a soma acumulada de vendas por mês para cada funcionário no último ano. Use um loop para processar mês a mês.
+
+---
+
+### **6. Procedure com dynamic SQL**
+Implemente uma procedure que receba como parâmetro uma tabela e uma coluna da base Northwind, e retorne os cinco maiores valores dessa coluna. Use SQL dinâmico para permitir flexibilidade.
+
+---
+
+### **7. Procedure que gera logs**
+Crie uma procedure que insira um novo pedido na tabela `Orders` e registre a ação em uma tabela de logs personalizada (`Logs`). Certifique-se de capturar informações como data e hora, ID do pedido e quem fez a operação.
+
+---
+
+### **8. Procedure com CTEs**
+Elabore uma procedure que receba o ID de um cliente e retorne todos os produtos comprados por ele, utilizando um CTE para calcular o total de unidades adquiridas por produto.
+
+---
+
+### **9. Procedure com manipulação de XML**
+Crie uma procedure que receba uma lista de IDs de produtos no formato XML e atualize o estoque de cada um deles em 10 unidades.
+
+---
+
+### **10. Procedure que utiliza tabelas de retorno**
+Implemente uma procedure que devolva, como resultado de tabela, os 5 clientes que mais compraram em um determinado período. Utilize `OUTPUT` ou uma tabela de retorno para apresentar os resultados.
+
+---
+
+Se precisar de mais detalhes ou exemplos de como implementar algum desses exercícios, é só pedir!

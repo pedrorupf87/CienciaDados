@@ -1,0 +1,63 @@
+### **Exercícios Avançados sobre Cursores**
+
+1. **Iterar sobre Pedidos:**  
+   Crie um cursor para iterar sobre os pedidos (tabela `Orders`) e calcule o total de frete (`Freight`) por país. Armazene os resultados em uma tabela temporária.
+
+2. **Atualização Condicional:**  
+   Use um cursor para atualizar os preços dos produtos na tabela `Products`, aplicando um desconto de 10% para produtos com estoque acima de 50 unidades (`UnitsInStock`).
+
+3. **Agrupamento de Pedidos:**  
+   Itere sobre os pedidos na tabela `Orders`, agrupados por cliente (`CustomerID`), e insira os totais de pedido em uma tabela de log personalizada.
+
+4. **Clientes Inativos:**  
+   Utilize um cursor para identificar clientes que não realizaram pedidos nos últimos dois anos e marque-os como inativos em uma tabela auxiliar.
+
+5. **Produtos por Categoria:**  
+   Crie um cursor para listar os produtos (`Products`) de cada categoria (`Categories`) e calcule a média de preço por categoria.
+
+6. **Controle de Estoque:**  
+   Use um cursor para iterar sobre os produtos com estoque (`UnitsInStock`) abaixo de um valor mínimo (ex.: 10) e insira registros em uma tabela para reabastecimento.
+
+7. **Pedidos por Ano:**  
+   Crie um cursor que percorra os anos distintos da tabela `Orders` e calcule o total de pedidos por ano.
+
+8. **Distribuição de Fretes:**  
+   Itere sobre os registros da tabela `Orders` e calcule a média e o desvio padrão do valor de frete (`Freight`) por região.
+
+9. **Histórico de Pedidos:**  
+   Use um cursor para iterar sobre os clientes e liste todos os pedidos feitos por cada cliente, agrupando por ano.
+
+10. **Pedidos Grandes:**  
+    Itere sobre a tabela `OrderDetails` e identifique os pedidos onde o valor total (quantidade × preço unitário) ultrapassa $5000.
+
+11. **Desempenho de Vendedores:**  
+    Use um cursor para calcular o total de vendas (com base nos pedidos) por vendedor (`EmployeeID`) e insira os resultados em uma tabela.
+
+12. **Atualização em Lote:**  
+    Use um cursor para iterar sobre os produtos e, para cada produto que tenha mais de 100 unidades em estoque, mova 50 unidades para outra tabela de inventário.
+
+13. **Promoção de Produtos:**  
+    Utilize um cursor para verificar quais produtos de categorias específicas (ex.: bebidas) têm vendas baixas e atualize seu preço com um desconto de 5%.
+
+14. **Análise de Frete:**  
+    Itere sobre os pedidos (`Orders`) e calcule o percentual de frete em relação ao total do pedido, armazenando os resultados em uma tabela temporária.
+
+15. **Histórico de Clientes:**  
+    Crie um cursor que percorra os clientes (`Customers`) e liste os produtos mais comprados por cada cliente, baseado na tabela `OrderDetails`.
+
+16. **Identificar Regiões Sem Pedidos:**  
+    Use um cursor para identificar regiões (`Region`) que não tiveram pedidos (`Orders`) em um determinado período.
+
+17. **Pedidos por Fornecedor:**  
+    Crie um cursor para iterar sobre os fornecedores (`Suppliers`) e liste os pedidos associados a produtos fornecidos por eles.
+
+18. **Atualização de Fretes:**  
+    Utilize um cursor para atualizar os valores de frete (`Freight`) em pedidos onde o valor do pedido ultrapassa $1000, adicionando 5% ao frete.
+
+19. **Análise de Produtos Descontinuados:**  
+    Itere sobre os produtos descontinuados (`Discontinued = 1`) e liste o número total de vendas antes de serem descontinuados.
+
+20. **Monitoramento de Estoque Crítico:**  
+    Use um cursor para iterar sobre os produtos e enviar alertas (registrar em uma tabela auxiliar) para aqueles com estoque (`UnitsInStock`) abaixo de um limite crítico.
+
+---

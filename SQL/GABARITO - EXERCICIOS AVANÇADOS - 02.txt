@@ -1,0 +1,665 @@
+Segue o gabarito para os 20 exercícios propostos sobre cursores no banco **Northwind**:  
+
+---
+
+### **Gabarito dos Exercícios sobre Cursores**
+
+#### **1. Iterar sobre Pedidos**  
+```sql
+DECLARE @Country NVARCHAR(50), @FreightTotal MONEY;
+
+CREATE TABLE #CountryFreight (Country NVARCHAR(50), FreightTotal MONEY);
+
+DECLARE CursorOrders CURSOR FOR  
+SELECT ShipCountry, SUM(Freight)  
+FROM Orders  
+GROUP BY ShipCountry;
+
+OPEN CursorOrders;
+
+FETCH NEXT FROM CursorOrders INTO @Country, @FreightTotal;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    INSERT INTO #CountryFreight VALUES (@Country, @FreightTotal);  
+    FETCH NEXT FROM CursorOrders INTO @Country, @FreightTotal;  
+END;
+
+CLOSE CursorOrders;  
+DEALLOCATE CursorOrders;
+
+SELECT * FROM #CountryFreight;
+DROP TABLE #CountryFreight;
+```
+
+---
+
+#### **2. Atualização Condicional**  
+```sql
+DECLARE @ProductID INT;
+
+DECLARE CursorProducts CURSOR FOR  
+SELECT ProductID  
+FROM Products  
+WHERE UnitsInStock > 50;
+
+OPEN CursorProducts;
+
+FETCH NEXT FROM CursorProducts INTO @ProductID;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    UPDATE Products  
+    SET UnitPrice = UnitPrice * 0.9  
+    WHERE ProductID = @ProductID;  
+
+    FETCH NEXT FROM CursorProducts INTO @ProductID;  
+END;
+
+CLOSE CursorProducts;  
+DEALLOCATE CursorProducts;
+```
+
+---
+
+#### **3. Agrupamento de Pedidos**  
+```sql
+DECLARE @CustomerID NCHAR(5), @TotalFreight MONEY;
+
+CREATE TABLE #CustomerFreight (CustomerID NCHAR(5), TotalFreight MONEY);
+
+DECLARE CursorOrders CURSOR FOR  
+SELECT CustomerID, SUM(Freight)  
+FROM Orders  
+GROUP BY CustomerID;
+
+OPEN CursorOrders;
+
+FETCH NEXT FROM CursorOrders INTO @CustomerID, @TotalFreight;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    INSERT INTO #CustomerFreight VALUES (@CustomerID, @TotalFreight);  
+    FETCH NEXT FROM CursorOrders INTO @CustomerID, @TotalFreight;  
+END;
+
+CLOSE CursorOrders;  
+DEALLOCATE CursorOrders;
+
+SELECT * FROM #CustomerFreight;
+DROP TABLE #CustomerFreight;
+```
+
+---
+
+#### **4. Clientes Inativos**  
+```sql
+DECLARE @CustomerID NCHAR(5);
+
+CREATE TABLE #InactiveCustomers (CustomerID NCHAR(5));
+
+DECLARE CursorCustomers CURSOR FOR  
+SELECT CustomerID  
+FROM Customers  
+WHERE CustomerID NOT IN  
+      (SELECT DISTINCT CustomerID  
+       FROM Orders  
+       WHERE OrderDate >= DATEADD(YEAR, -2, GETDATE()));
+
+OPEN CursorCustomers;
+
+FETCH NEXT FROM CursorCustomers INTO @CustomerID;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    INSERT INTO #InactiveCustomers VALUES (@CustomerID);  
+    FETCH NEXT FROM CursorCustomers INTO @CustomerID;  
+END;
+
+CLOSE CursorCustomers;  
+DEALLOCATE CursorCustomers;
+
+SELECT * FROM #InactiveCustomers;
+DROP TABLE #InactiveCustomers;
+```
+
+---
+
+#### **5. Produtos por Categoria**  
+```sql
+DECLARE @CategoryID INT, @AveragePrice MONEY;
+
+CREATE TABLE #CategoryAveragePrice (CategoryID INT, AveragePrice MONEY);
+
+DECLARE CursorCategories CURSOR FOR  
+SELECT CategoryID, AVG(UnitPrice)  
+FROM Products  
+GROUP BY CategoryID;
+
+OPEN CursorCategories;
+
+FETCH NEXT FROM CursorCategories INTO @CategoryID, @AveragePrice;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    INSERT INTO #CategoryAveragePrice VALUES (@CategoryID, @AveragePrice);  
+    FETCH NEXT FROM CursorCategories INTO @CategoryID, @AveragePrice;  
+END;
+
+CLOSE CursorCategories;  
+DEALLOCATE CursorCategories;
+
+SELECT * FROM #CategoryAveragePrice;
+DROP TABLE #CategoryAveragePrice;
+```
+
+---
+
+#### **6. Controle de Estoque**  
+```sql
+DECLARE @ProductID INT, @UnitsInStock INT;
+
+CREATE TABLE #Restock (ProductID INT, UnitsToRestock INT);
+
+DECLARE CursorLowStock CURSOR FOR  
+SELECT ProductID, UnitsInStock  
+FROM Products  
+WHERE UnitsInStock < 10;
+
+OPEN CursorLowStock;
+
+FETCH NEXT FROM CursorLowStock INTO @ProductID, @UnitsInStock;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    INSERT INTO #Restock VALUES (@ProductID, 10 - @UnitsInStock);  
+    FETCH NEXT FROM CursorLowStock INTO @ProductID, @UnitsInStock;  
+END;
+
+CLOSE CursorLowStock;  
+DEALLOCATE CursorLowStock;
+
+SELECT * FROM #Restock;
+DROP TABLE #Restock;
+```
+
+---
+
+#### **7. Pedidos por Ano**  
+```sql
+DECLARE @Year INT, @OrderCount INT;
+
+CREATE TABLE #OrdersPerYear (Year INT, OrderCount INT);
+
+DECLARE CursorYears CURSOR FOR  
+SELECT YEAR(OrderDate) AS OrderYear, COUNT(*)  
+FROM Orders  
+GROUP BY YEAR(OrderDate);
+
+OPEN CursorYears;
+
+FETCH NEXT FROM CursorYears INTO @Year, @OrderCount;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    INSERT INTO #OrdersPerYear VALUES (@Year, @OrderCount);  
+    FETCH NEXT FROM CursorYears INTO @Year, @OrderCount;  
+END;
+
+CLOSE CursorYears;  
+DEALLOCATE CursorYears;
+
+SELECT * FROM #OrdersPerYear;
+DROP TABLE #OrdersPerYear;
+```
+
+---
+
+#### **8. Distribuição de Fretes**  
+```sql
+-- Similar lógica ao exercício 1, mas calculando médias/desvios.
+
+---
+
+#### **9. Histórico de Pedidos**
+```sql
+DECLARE @CustomerID NCHAR(5), @OrderID INT, @OrderYear INT;
+
+CREATE TABLE #CustomerOrderHistory (CustomerID NCHAR(5), OrderID INT, OrderYear INT);
+
+DECLARE CursorCustomers CURSOR FOR  
+SELECT DISTINCT CustomerID  
+FROM Orders;
+
+OPEN CursorCustomers;
+
+FETCH NEXT FROM CursorCustomers INTO @CustomerID;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    DECLARE CursorOrders CURSOR FOR  
+    SELECT OrderID, YEAR(OrderDate) AS OrderYear  
+    FROM Orders  
+    WHERE CustomerID = @CustomerID;
+
+    OPEN CursorOrders;
+
+    FETCH NEXT FROM CursorOrders INTO @OrderID, @OrderYear;
+
+    WHILE @@FETCH_STATUS = 0  
+    BEGIN  
+        INSERT INTO #CustomerOrderHistory VALUES (@CustomerID, @OrderID, @OrderYear);  
+        FETCH NEXT FROM CursorOrders INTO @OrderID, @OrderYear;  
+    END;
+
+    CLOSE CursorOrders;  
+    DEALLOCATE CursorOrders;
+
+    FETCH NEXT FROM CursorCustomers INTO @CustomerID;  
+END;
+
+CLOSE CursorCustomers;  
+DEALLOCATE CursorCustomers;
+
+SELECT * FROM #CustomerOrderHistory;
+DROP TABLE #CustomerOrderHistory;
+```
+
+---
+
+#### **10. Pedidos Grandes**
+```sql
+DECLARE @OrderID INT, @OrderTotal MONEY;
+
+CREATE TABLE #LargeOrders (OrderID INT, OrderTotal MONEY);
+
+DECLARE CursorLargeOrders CURSOR FOR  
+SELECT OrderID, SUM(UnitPrice * Quantity) AS OrderTotal  
+FROM [Order Details]  
+GROUP BY OrderID  
+HAVING SUM(UnitPrice * Quantity) > 5000;
+
+OPEN CursorLargeOrders;
+
+FETCH NEXT FROM CursorLargeOrders INTO @OrderID, @OrderTotal;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    INSERT INTO #LargeOrders VALUES (@OrderID, @OrderTotal);  
+    FETCH NEXT FROM CursorLargeOrders INTO @OrderID, @OrderTotal;  
+END;
+
+CLOSE CursorLargeOrders;  
+DEALLOCATE CursorLargeOrders;
+
+SELECT * FROM #LargeOrders;
+DROP TABLE #LargeOrders;
+```
+
+---
+
+#### **11. Desempenho de Vendedores**
+```sql
+DECLARE @EmployeeID INT, @SalesTotal MONEY;
+
+CREATE TABLE #EmployeeSales (EmployeeID INT, SalesTotal MONEY);
+
+DECLARE CursorSales CURSOR FOR  
+SELECT EmployeeID, SUM(Freight) AS SalesTotal  
+FROM Orders  
+GROUP BY EmployeeID;
+
+OPEN CursorSales;
+
+FETCH NEXT FROM CursorSales INTO @EmployeeID, @SalesTotal;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    INSERT INTO #EmployeeSales VALUES (@EmployeeID, @SalesTotal);  
+    FETCH NEXT FROM CursorSales INTO @EmployeeID, @SalesTotal;  
+END;
+
+CLOSE CursorSales;  
+DEALLOCATE CursorSales;
+
+SELECT * FROM #EmployeeSales;
+DROP TABLE #EmployeeSales;
+```
+
+---
+
+#### **12. Atualização em Lote**
+```sql
+DECLARE @ProductID INT, @UnitsInStock INT;
+
+DECLARE CursorProducts CURSOR FOR  
+SELECT ProductID, UnitsInStock  
+FROM Products  
+WHERE UnitsInStock > 100;
+
+OPEN CursorProducts;
+
+FETCH NEXT FROM CursorProducts INTO @ProductID, @UnitsInStock;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    UPDATE Products  
+    SET UnitsInStock = UnitsInStock - 50  
+    WHERE ProductID = @ProductID;  
+
+    FETCH NEXT FROM CursorProducts INTO @ProductID, @UnitsInStock;  
+END;
+
+CLOSE CursorProducts;  
+DEALLOCATE CursorProducts;
+```
+
+---
+
+#### **13. Promoção de Produtos**
+```sql
+DECLARE @ProductID INT, @UnitPrice MONEY;
+
+DECLARE CursorProducts CURSOR FOR  
+SELECT ProductID, UnitPrice  
+FROM Products  
+WHERE CategoryID = (SELECT CategoryID FROM Categories WHERE CategoryName = 'Beverages')  
+AND UnitsInStock < 50;
+
+OPEN CursorProducts;
+
+FETCH NEXT FROM CursorProducts INTO @ProductID, @UnitPrice;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    UPDATE Products  
+    SET UnitPrice = UnitPrice * 0.95  
+    WHERE ProductID = @ProductID;  
+
+    FETCH NEXT FROM CursorProducts INTO @ProductID, @UnitPrice;  
+END;
+
+CLOSE CursorProducts;  
+DEALLOCATE CursorProducts;
+```
+
+---
+
+#### **14. Análise de Frete**
+```sql
+DECLARE @OrderID INT, @Freight MONEY, @OrderTotal MONEY, @FreightPercentage FLOAT;
+
+CREATE TABLE #FreightAnalysis (OrderID INT, FreightPercentage FLOAT);
+
+DECLARE CursorOrders CURSOR FOR  
+SELECT OrderID, Freight,  
+       (SELECT SUM(UnitPrice * Quantity) FROM [Order Details] WHERE OrderID = O.OrderID) AS OrderTotal  
+FROM Orders O;
+
+OPEN CursorOrders;
+
+FETCH NEXT FROM CursorOrders INTO @OrderID, @Freight, @OrderTotal;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    SET @FreightPercentage = (@Freight / @OrderTotal) * 100;  
+
+    INSERT INTO #FreightAnalysis VALUES (@OrderID, @FreightPercentage);  
+
+    FETCH NEXT FROM CursorOrders INTO @OrderID, @Freight, @OrderTotal;  
+END;
+
+CLOSE CursorOrders;  
+DEALLOCATE CursorOrders;
+
+SELECT * FROM #FreightAnalysis;
+DROP TABLE #FreightAnalysis;
+```
+
+---
+
+#### **15. Histórico de Clientes**
+```sql
+DECLARE @CustomerID NCHAR(5), @ProductID INT;
+
+CREATE TABLE #CustomerProductHistory (CustomerID NCHAR(5), ProductID INT);
+
+DECLARE CursorCustomers CURSOR FOR  
+SELECT DISTINCT CustomerID  
+FROM Orders;
+
+OPEN CursorCustomers;
+
+FETCH NEXT FROM CursorCustomers INTO @CustomerID;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    DECLARE CursorProducts CURSOR FOR  
+    SELECT TOP 1 ProductID  
+    FROM [Order Details] OD  
+    INNER JOIN Orders O ON OD.OrderID = O.OrderID  
+    WHERE O.CustomerID = @CustomerID  
+    GROUP BY ProductID  
+    ORDER BY SUM(Quantity) DESC;
+
+    OPEN CursorProducts;
+
+    FETCH NEXT FROM CursorProducts INTO @ProductID;
+
+    WHILE @@FETCH_STATUS = 0  
+    BEGIN  
+        INSERT INTO #CustomerProductHistory VALUES (@CustomerID, @ProductID);  
+        FETCH NEXT FROM CursorProducts INTO @ProductID;  
+    END;
+
+    CLOSE CursorProducts;  
+    DEALLOCATE CursorProducts;
+
+    FETCH NEXT FROM CursorCustomers INTO @CustomerID;  
+END;
+
+CLOSE CursorCustomers;  
+DEALLOCATE CursorCustomers;
+
+SELECT * FROM #CustomerProductHistory;
+DROP TABLE #CustomerProductHistory;
+```
+
+---
+
+#### **16. Identificar Regiões Sem Pedidos**  
+```sql
+DECLARE @Region NVARCHAR(50);
+
+CREATE TABLE #RegionsWithoutOrders (Region NVARCHAR(50));
+
+DECLARE CursorRegions CURSOR FOR  
+SELECT DISTINCT Region  
+FROM Customers  
+WHERE Region NOT IN (  
+    SELECT DISTINCT ShipRegion  
+    FROM Orders  
+    WHERE ShipRegion IS NOT NULL  
+);
+
+OPEN CursorRegions;
+
+FETCH NEXT FROM CursorRegions INTO @Region;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    INSERT INTO #RegionsWithoutOrders VALUES (@Region);  
+    FETCH NEXT FROM CursorRegions INTO @Region;  
+END;
+
+CLOSE CursorRegions;  
+DEALLOCATE CursorRegions;
+
+SELECT * FROM #RegionsWithoutOrders;
+DROP TABLE #RegionsWithoutOrders;
+```
+
+---
+
+#### **17. Pedidos por Fornecedor**  
+```sql
+DECLARE @SupplierID INT, @ProductID INT, @OrderID INT;
+
+CREATE TABLE #SupplierOrders (SupplierID INT, OrderID INT);
+
+DECLARE CursorSuppliers CURSOR FOR  
+SELECT SupplierID  
+FROM Suppliers;
+
+OPEN CursorSuppliers;
+
+FETCH NEXT FROM CursorSuppliers INTO @SupplierID;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    DECLARE CursorProducts CURSOR FOR  
+    SELECT ProductID  
+    FROM Products  
+    WHERE SupplierID = @SupplierID;
+
+    OPEN CursorProducts;
+
+    FETCH NEXT FROM CursorProducts INTO @ProductID;
+
+    WHILE @@FETCH_STATUS = 0  
+    BEGIN  
+        DECLARE CursorOrders CURSOR FOR  
+        SELECT DISTINCT OrderID  
+        FROM [Order Details]  
+        WHERE ProductID = @ProductID;
+
+        OPEN CursorOrders;
+
+        FETCH NEXT FROM CursorOrders INTO @OrderID;
+
+        WHILE @@FETCH_STATUS = 0  
+        BEGIN  
+            INSERT INTO #SupplierOrders VALUES (@SupplierID, @OrderID);  
+            FETCH NEXT FROM CursorOrders INTO @OrderID;  
+        END;
+
+        CLOSE CursorOrders;  
+        DEALLOCATE CursorOrders;
+
+        FETCH NEXT FROM CursorProducts INTO @ProductID;  
+    END;
+
+    CLOSE CursorProducts;  
+    DEALLOCATE CursorProducts;
+
+    FETCH NEXT FROM CursorSuppliers INTO @SupplierID;  
+END;
+
+CLOSE CursorSuppliers;  
+DEALLOCATE CursorSuppliers;
+
+SELECT * FROM #SupplierOrders;
+DROP TABLE #SupplierOrders;
+```
+
+---
+
+#### **18. Atualização de Fretes**  
+```sql
+DECLARE @OrderID INT, @Freight MONEY;
+
+DECLARE CursorOrders CURSOR FOR  
+SELECT OrderID, Freight  
+FROM Orders  
+WHERE OrderID IN (  
+    SELECT OrderID  
+    FROM [Order Details]  
+    GROUP BY OrderID  
+    HAVING SUM(UnitPrice * Quantity) > 1000  
+);
+
+OPEN CursorOrders;
+
+FETCH NEXT FROM CursorOrders INTO @OrderID, @Freight;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    UPDATE Orders  
+    SET Freight = Freight * 1.05  
+    WHERE OrderID = @OrderID;  
+
+    FETCH NEXT FROM CursorOrders INTO @OrderID, @Freight;  
+END;
+
+CLOSE CursorOrders;  
+DEALLOCATE CursorOrders;
+```
+
+---
+
+#### **19. Análise de Produtos Descontinuados**  
+```sql
+DECLARE @ProductID INT, @SalesTotal MONEY;
+
+CREATE TABLE #DiscontinuedProductSales (ProductID INT, SalesTotal MONEY);
+
+DECLARE CursorDiscontinued CURSOR FOR  
+SELECT ProductID  
+FROM Products  
+WHERE Discontinued = 1;
+
+OPEN CursorDiscontinued;
+
+FETCH NEXT FROM CursorDiscontinued INTO @ProductID;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    SET @SalesTotal = (  
+        SELECT SUM(UnitPrice * Quantity)  
+        FROM [Order Details]  
+        WHERE ProductID = @ProductID  
+    );
+
+    INSERT INTO #DiscontinuedProductSales VALUES (@ProductID, ISNULL(@SalesTotal, 0));  
+
+    FETCH NEXT FROM CursorDiscontinued INTO @ProductID;  
+END;
+
+CLOSE CursorDiscontinued;  
+DEALLOCATE CursorDiscontinued;
+
+SELECT * FROM #DiscontinuedProductSales;
+DROP TABLE #DiscontinuedProductSales;
+```
+
+---
+
+#### **20. Monitoramento de Estoque Crítico**  
+```sql
+DECLARE @ProductID INT, @UnitsInStock INT;
+
+CREATE TABLE #CriticalStockAlert (ProductID INT, UnitsInStock INT);
+
+DECLARE CursorCriticalStock CURSOR FOR  
+SELECT ProductID, UnitsInStock  
+FROM Products  
+WHERE UnitsInStock < 5;
+
+OPEN CursorCriticalStock;
+
+FETCH NEXT FROM CursorCriticalStock INTO @ProductID, @UnitsInStock;
+
+WHILE @@FETCH_STATUS = 0  
+BEGIN  
+    INSERT INTO #CriticalStockAlert VALUES (@ProductID, @UnitsInStock);  
+    FETCH NEXT FROM CursorCriticalStock INTO @ProductID, @UnitsInStock;  
+END;
+
+CLOSE CursorCriticalStock;  
+DEALLOCATE CursorCriticalStock;
+
+SELECT * FROM #CriticalStockAlert;
+DROP TABLE #CriticalStockAlert;
+```
+
+---

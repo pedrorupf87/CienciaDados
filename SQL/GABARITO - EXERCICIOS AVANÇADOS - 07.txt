@@ -1,0 +1,2040 @@
+Abaixo está o gabarito detalhado com a solução em T-SQL para os exercícios de **1 a 20** da lista, todos focados em **cursores** no banco de dados Northwind. Cada solução inclui comentários explicativos, boas práticas e, quando aplicável, tratamento básico de erros ou logs. Vou assumir que você tem permissões para criar tabelas de log ou temporárias conforme necessário.
+
+---
+
+### **1. Atualizar Freight com aumento de 10% para pedidos com valor total > $500**
+```sql
+-- Criação de uma tabela de log para auditoria
+CREATE TABLE LogFreightUpdate (
+    OrderID INT,
+    OldFreight DECIMAL(10,2),
+    NewFreight DECIMAL(10,2),
+    UpdateDate DATETIME
+);
+
+DECLARE @OrderID INT, @Freight DECIMAL(10,2), @TotalValue DECIMAL(10,2);
+
+DECLARE freight_cursor CURSOR FOR
+    SELECT o.OrderID, o.Freight, SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) AS TotalValue
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY o.OrderID, o.Freight
+    HAVING SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) > 500;
+
+OPEN freight_cursor;
+FETCH NEXT FROM freight_cursor INTO @OrderID, @Freight, @TotalValue;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    DECLARE @NewFreight DECIMAL(10,2) = @Freight * 1.10; -- Aumento de 10%
+    UPDATE Orders
+    SET Freight = @NewFreight
+    WHERE OrderID = @OrderID;
+
+    INSERT INTO LogFreightUpdate (OrderID, OldFreight, NewFreight, UpdateDate)
+    VALUES (@OrderID, @Freight, @NewFreight, GETDATE());
+
+    FETCH NEXT FROM freight_cursor INTO @OrderID, @Freight, @TotalValue;
+END;
+
+CLOSE freight_cursor;
+DEALLOCATE freight_cursor;
+
+-- Verificação
+SELECT * FROM LogFreightUpdate;
+```
+
+---
+
+### **2. Clientes com mais de 5 pedidos no último ano**
+```sql
+CREATE TABLE #TopCustomers (
+    CustomerID NCHAR(5),
+    TotalOrders INT,
+    TotalSpent DECIMAL(10,2)
+);
+
+DECLARE @CustomerID NCHAR(5), @OrderCount INT, @TotalSpent DECIMAL(10,2);
+
+DECLARE customer_cursor CURSOR FOR
+    SELECT o.CustomerID, COUNT(o.OrderID), SUM(od.UnitPrice * od.Quantity * (1 - od.Discount))
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    WHERE o.OrderDate >= DATEADD(YEAR, -1, GETDATE())
+    GROUP BY o.CustomerID
+    HAVING COUNT(o.OrderID) > 5;
+
+OPEN customer_cursor;
+FETCH NEXT FROM customer_cursor INTO @CustomerID, @OrderCount, @TotalSpent;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    INSERT INTO #TopCustomers (CustomerID, TotalOrders, TotalSpent)
+    VALUES (@CustomerID, @OrderCount, @TotalSpent);
+
+    FETCH NEXT FROM customer_cursor INTO @CustomerID, @OrderCount, @TotalSpent;
+END;
+
+CLOSE customer_cursor;
+DEALLOCATE customer_cursor;
+
+-- Verificação
+SELECT * FROM #TopCustomers;
+```
+
+---
+
+### **3. Reduzir preço em 5% para produtos com estoque > 100**
+```sql
+DECLARE @ProductID INT, @UnitPrice DECIMAL(10,2), @UnitsInStock SMALLINT;
+
+DECLARE product_cursor CURSOR FOR
+    SELECT ProductID, UnitPrice, UnitsInStock
+    FROM Products
+    WHERE UnitsInStock > 100;
+
+OPEN product_cursor;
+FETCH NEXT FROM product_cursor INTO @ProductID, @UnitPrice, @UnitsInStock;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    BEGIN TRY
+        DECLARE @NewPrice DECIMAL(10,2) = @UnitPrice * 0.95; -- Redução de 5%
+        IF @NewPrice < 0
+            THROW 50001, 'Preço não pode ser negativo.', 1;
+        
+        UPDATE Products
+        SET UnitPrice = @NewPrice
+        WHERE ProductID = @ProductID;
+    END TRY
+    BEGIN CATCH
+        PRINT 'Erro ao atualizar Produto ' + CAST(@ProductID AS VARCHAR) + ': ' + ERROR_MESSAGE();
+    END CATCH;
+
+    FETCH NEXT FROM product_cursor INTO @ProductID, @UnitPrice, @UnitsInStock;
+END;
+
+CLOSE product_cursor;
+DEALLOCATE product_cursor;
+```
+
+---
+
+### **4. Auditoria de quantidade total de itens por pedido**
+```sql
+CREATE TABLE OrderAudit (
+    OrderID INT,
+    TotalItems INT,
+    AuditDate DATETIME
+);
+
+DECLARE @OrderID INT, @TotalItems INT;
+
+DECLARE order_cursor CURSOR FOR
+    SELECT OrderID, SUM(Quantity)
+    FROM [Order Details]
+    GROUP BY OrderID;
+
+OPEN order_cursor;
+FETCH NEXT FROM order_cursor INTO @OrderID, @TotalItems;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    BEGIN TRY
+        IF @TotalItems IS NULL
+            SET @TotalItems = 0;
+        
+        INSERT INTO OrderAudit (OrderID, TotalItems, AuditDate)
+        VALUES (@OrderID, @TotalItems, GETDATE());
+    END TRY
+    BEGIN CATCH
+        PRINT 'Erro no pedido ' + CAST(@OrderID AS VARCHAR) + ': ' + ERROR_MESSAGE();
+    END CATCH;
+
+    FETCH NEXT FROM order_cursor INTO @OrderID, @TotalItems;
+END;
+
+CLOSE order_cursor;
+DEALLOCATE order_cursor;
+
+-- Verificação
+SELECT * FROM OrderAudit;
+```
+
+---
+
+### **5. Relatório de pedidos por funcionário no último trimestre**
+```sql
+CREATE TABLE EmployeePerformance (
+    EmployeeID INT,
+    TotalOrders INT
+);
+
+DECLARE @EmployeeID INT, @OrderCount INT;
+
+DECLARE employee_cursor CURSOR FOR
+    SELECT EmployeeID, COUNT(OrderID)
+    FROM Orders
+    WHERE OrderDate >= DATEADD(QUARTER, -1, GETDATE())
+    GROUP BY EmployeeID;
+
+OPEN employee_cursor;
+FETCH NEXT FROM employee_cursor INTO @EmployeeID, @OrderCount;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    INSERT INTO EmployeePerformance (EmployeeID, TotalOrders)
+    VALUES (@EmployeeID, @OrderCount);
+
+    FETCH NEXT FROM employee_cursor INTO @EmployeeID, @OrderCount;
+END;
+
+CLOSE employee_cursor;
+DEALLOCATE employee_cursor;
+
+-- Verificação ordenada
+SELECT * FROM EmployeePerformance ORDER BY TotalOrders DESC;
+```
+
+---
+
+### **6. Padronizar telefones dos fornecedores**
+```sql
+DECLARE @SupplierID INT, @Phone NVARCHAR(24);
+
+DECLARE supplier_cursor CURSOR FOR
+    SELECT SupplierID, Phone
+    FROM Suppliers;
+
+OPEN supplier_cursor;
+FETCH NEXT FROM supplier_cursor INTO @SupplierID, @Phone;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    BEGIN TRY
+        -- Exemplo de padronização simples: +XX-XXXX-XXXX
+        DECLARE @NewPhone NVARCHAR(24) = '+55-' + REPLACE(@Phone, ' ', '');
+        UPDATE Suppliers
+        SET Phone = @NewPhone
+        WHERE SupplierID = @SupplierID;
+    END TRY
+    BEGIN CATCH
+        PRINT 'Erro ao atualizar Supplier ' + CAST(@SupplierID AS VARCHAR) + ': ' + ERROR_MESSAGE();
+    END CATCH;
+
+    FETCH NEXT FROM supplier_cursor INTO @SupplierID, @Phone;
+END;
+
+CLOSE supplier_cursor;
+DEALLOCATE supplier_cursor;
+```
+
+---
+
+### **7. Aplicar desconto de 15% em pedidos com mais de 10 unidades**
+```sql
+CREATE TABLE DiscountLog (
+    OrderID INT,
+    ProductID INT,
+    OldPrice DECIMAL(10,2),
+    NewPrice DECIMAL(10,2)
+);
+
+DECLARE @OrderID INT, @ProductID INT, @UnitPrice DECIMAL(10,2), @Quantity INT;
+
+DECLARE discount_cursor CURSOR FOR
+    SELECT OrderID, ProductID, UnitPrice, Quantity
+    FROM [Order Details]
+    WHERE Quantity > 10;
+
+OPEN discount_cursor;
+FETCH NEXT FROM discount_cursor INTO @OrderID, @ProductID, @UnitPrice, @Quantity;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    DECLARE @NewPrice DECIMAL(10,2) = @UnitPrice * 0.85; -- Desconto de 15%
+    UPDATE [Order Details]
+    SET UnitPrice = @NewPrice
+    WHERE OrderID = @OrderID AND ProductID = @ProductID;
+
+    INSERT INTO DiscountLog (OrderID, ProductID, OldPrice, NewPrice)
+    VALUES (@OrderID, @ProductID, @UnitPrice, @NewPrice);
+
+    FETCH NEXT FROM discount_cursor INTO @OrderID, @ProductID, @UnitPrice, @Quantity;
+END;
+
+CLOSE discount_cursor;
+DEALLOCATE discount_cursor;
+
+-- Verificação
+SELECT * FROM DiscountLog;
+```
+
+---
+
+### **8. Cancelar pedidos não enviados há mais de 30 dias**
+```sql
+ALTER TABLE Orders ADD Status VARCHAR(20) DEFAULT 'Ativo';
+
+DECLARE @OrderID INT, @OrderDate DATETIME;
+
+DECLARE cancel_cursor CURSOR FOR
+    SELECT OrderID, OrderDate
+    FROM Orders
+    WHERE ShippedDate IS NULL
+    AND OrderDate < DATEADD(DAY, -30, GETDATE());
+
+OPEN cancel_cursor;
+FETCH NEXT FROM cancel_cursor INTO @OrderID, @OrderDate;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    BEGIN TRY
+        UPDATE Orders
+        SET Status = 'Cancelado'
+        WHERE OrderID = @OrderID;
+    END TRY
+    BEGIN CATCH
+        PRINT 'Erro ao cancelar pedido ' + CAST(@OrderID AS VARCHAR) + ': ' + ERROR_MESSAGE();
+    END CATCH;
+
+    FETCH NEXT FROM cancel_cursor INTO @OrderID, @OrderDate;
+END;
+
+CLOSE cancel_cursor;
+DEALLOCATE cancel_cursor;
+```
+
+---
+
+### **9. Histórico de produtos descontinuados**
+```sql
+CREATE TABLE DiscontinuedProducts (
+    ProductID INT,
+    ProductName NVARCHAR(40),
+    SupplierName NVARCHAR(40),
+    DiscontinuedDate DATETIME
+);
+
+DECLARE @ProductID INT, @ProductName NVARCHAR(40), @SupplierName NVARCHAR(40);
+
+DECLARE discontinued_cursor CURSOR FOR
+    SELECT p.ProductID, p.ProductName, s.CompanyName
+    FROM Products p
+    JOIN Suppliers s ON p.SupplierID = s.SupplierID
+    WHERE p.Discontinued = 1;
+
+OPEN discontinued_cursor;
+FETCH NEXT FROM discontinued_cursor INTO @ProductID, @ProductName, @SupplierName;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    INSERT INTO DiscontinuedProducts (ProductID, ProductName, SupplierName, DiscontinuedDate)
+    VALUES (@ProductID, @ProductName, @SupplierName, GETDATE());
+
+    FETCH NEXT FROM discontinued_cursor INTO @ProductID, @ProductName, @SupplierName;
+END;
+
+CLOSE discontinued_cursor;
+DEALLOCATE discontinued_cursor;
+
+-- Verificação
+SELECT * FROM DiscontinuedProducts;
+```
+
+---
+
+### **10. "E-mail" para clientes inativos há 6 meses**
+```sql
+CREATE TABLE InactiveCustomers (
+    CustomerID NCHAR(5),
+    LastOrderDate DATETIME,
+    EmailSentDate DATETIME
+);
+
+DECLARE @CustomerID NCHAR(5), @LastOrderDate DATETIME;
+
+DECLARE inactive_cursor CURSOR FOR
+    SELECT c.CustomerID, MAX(o.OrderDate)
+    FROM Customers c
+    LEFT JOIN Orders o ON c.CustomerID = o.CustomerID
+    GROUP BY c.CustomerID
+    HAVING MAX(o.OrderDate) < DATEADD(MONTH, -6, GETDATE()) OR MAX(o.OrderDate) IS NULL;
+
+OPEN inactive_cursor;
+FETCH NEXT FROM inactive_cursor INTO @CustomerID, @LastOrderDate;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    INSERT INTO InactiveCustomers (CustomerID, LastOrderDate, EmailSentDate)
+    VALUES (@CustomerID, @LastOrderDate, GETDATE());
+
+    FETCH NEXT FROM inactive_cursor INTO @CustomerID, @LastOrderDate;
+END;
+
+CLOSE inactive_cursor;
+DEALLOCATE inactive_cursor;
+
+-- Verificação
+SELECT * FROM InactiveCustomers;
+```
+
+---
+
+### **11. Recalcular valor total de pedidos**
+```sql
+ALTER TABLE Orders ADD TotalValue DECIMAL(10,2);
+
+DECLARE @OrderID INT, @TotalValue DECIMAL(10,2);
+
+DECLARE total_cursor CURSOR FOR
+    SELECT OrderID, SUM(UnitPrice * Quantity * (1 - Discount))
+    FROM [Order Details]
+    GROUP BY OrderID;
+
+OPEN total_cursor;
+FETCH NEXT FROM total_cursor INTO @OrderID, @TotalValue;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    UPDATE Orders
+    SET TotalValue = @TotalValue
+    WHERE OrderID = @OrderID;
+
+    FETCH NEXT FROM total_cursor INTO @OrderID, @TotalValue;
+END;
+
+CLOSE total_cursor;
+DEALLOCATE total_cursor;
+
+-- Verificação
+SELECT OrderID, TotalValue FROM Orders WHERE TotalValue IS NOT NULL;
+```
+
+---
+
+### **12. Hierarquia de subordinados**
+```sql
+CREATE TABLE EmployeeHierarchy (
+    EmployeeID INT,
+    ManagerID INT,
+    EmployeeName NVARCHAR(50)
+);
+
+DECLARE @EmployeeID INT, @ReportsTo INT, @FirstName NVARCHAR(10), @LastName NVARCHAR(20);
+
+DECLARE hierarchy_cursor CURSOR FOR
+    SELECT EmployeeID, ReportsTo, FirstName, LastName
+    FROM Employees;
+
+OPEN hierarchy_cursor;
+FETCH NEXT FROM hierarchy_cursor INTO @EmployeeID, @ReportsTo, @FirstName, @LastName;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    INSERT INTO EmployeeHierarchy (EmployeeID, ManagerID, EmployeeName)
+    VALUES (@EmployeeID, @ReportsTo, @FirstName + ' ' + @LastName);
+
+    FETCH NEXT FROM hierarchy_cursor INTO @EmployeeID, @ReportsTo, @FirstName, @LastName;
+END;
+
+CLOSE hierarchy_cursor;
+DEALLOCATE hierarchy_cursor;
+
+-- Verificação
+SELECT * FROM EmployeeHierarchy;
+```
+
+---
+
+### **13. Produtos vendidos acima do preço médio da categoria**
+```sql
+CREATE TABLE PriceExceptions (
+    OrderID INT,
+    ProductID INT,
+    UnitPrice DECIMAL(10,2),
+    AvgCategoryPrice DECIMAL(10,2)
+);
+
+DECLARE @OrderID INT, @ProductID INT, @UnitPrice DECIMAL(10,2), @AvgPrice DECIMAL(10,2);
+
+DECLARE price_cursor CURSOR FOR
+    SELECT od.OrderID, od.ProductID, od.UnitPrice, 
+           AVG(od.UnitPrice) OVER (PARTITION BY p.CategoryID) AS AvgPrice
+    FROM [Order Details] od
+    JOIN Products p ON od.ProductID = p.ProductID
+    WHERE od.UnitPrice > (SELECT AVG(UnitPrice) FROM Products p2 WHERE p2.CategoryID = p.CategoryID);
+
+OPEN price_cursor;
+FETCH NEXT FROM price_cursor INTO @OrderID, @ProductID, @UnitPrice, @AvgPrice;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    INSERT INTO PriceExceptions (OrderID, ProductID, UnitPrice, AvgCategoryPrice)
+    VALUES (@OrderID, @ProductID, @UnitPrice, @AvgPrice);
+
+    FETCH NEXT FROM price_cursor INTO @OrderID, @ProductID, @UnitPrice, @AvgPrice;
+END;
+
+CLOSE price_cursor;
+DEALLOCATE price_cursor;
+
+-- Verificação
+SELECT * FROM PriceExceptions;
+```
+
+---
+
+### **14. Resumo de pedidos por cliente**
+```sql
+CREATE TABLE CustomerSummary (
+    CustomerID NCHAR(5),
+    TotalOrders INT,
+    AvgFreight DECIMAL(10,2)
+);
+
+DECLARE @CustomerID NCHAR(5), @TotalOrders INT, @AvgFreight DECIMAL(10,2);
+
+DECLARE summary_cursor CURSOR FOR
+    SELECT CustomerID, COUNT(OrderID), AVG(Freight)
+    FROM Orders
+    GROUP BY CustomerID;
+
+OPEN summary_cursor;
+FETCH NEXT FROM summary_cursor INTO @CustomerID, @TotalOrders, @AvgFreight;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    BEGIN TRY
+        INSERT INTO CustomerSummary (CustomerID, TotalOrders, AvgFreight)
+        VALUES (@CustomerID, @TotalOrders, @AvgFreight);
+    END TRY
+    BEGIN CATCH
+        PRINT 'Erro no cliente ' + @CustomerID + ': ' + ERROR_MESSAGE();
+    END CATCH;
+
+    FETCH NEXT FROM summary_cursor INTO @CustomerID, @TotalOrders, @AvgFreight;
+END;
+
+CLOSE summary_cursor;
+DEALLOCATE summary_cursor;
+
+-- Verificação
+SELECT * FROM CustomerSummary;
+```
+
+---
+
+### **15. Aumentar estoque em 20% para produtos com menos de 10 unidades**
+```sql
+DECLARE @ProductID INT, @UnitsInStock SMALLINT;
+
+DECLARE stock_cursor CURSOR FOR
+    SELECT ProductID, UnitsInStock
+    FROM Products
+    WHERE UnitsInStock < 10;
+
+OPEN stock_cursor;
+FETCH NEXT FROM stock_cursor INTO @ProductID, @UnitsInStock;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    DECLARE @NewStock INT = @UnitsInStock * 1.20;
+    IF @NewStock < 0 SET @NewStock = 0;
+
+    UPDATE Products
+    SET UnitsInStock = @NewStock
+    WHERE ProductID = @ProductID;
+
+    FETCH NEXT FROM stock_cursor INTO @ProductID, @UnitsInStock;
+END;
+
+CLOSE stock_cursor;
+DEALLOCATE stock_cursor;
+```
+
+---
+
+### **16. Ranking dos 10 clientes com mais pedidos**
+```sql
+CREATE TABLE Top10Customers (
+    CustomerID NCHAR(5),
+    TotalOrders INT
+);
+
+DECLARE @CustomerID NCHAR(5), @TotalOrders INT;
+
+DECLARE ranking_cursor CURSOR FOR
+    SELECT TOP 10 CustomerID, COUNT(OrderID)
+    FROM Orders
+    GROUP BY CustomerID
+    ORDER BY COUNT(OrderID) DESC;
+
+OPEN ranking_cursor;
+FETCH NEXT FROM ranking_cursor INTO @CustomerID, @TotalOrders;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    INSERT INTO Top10Customers (CustomerID, TotalOrders)
+    VALUES (@CustomerID, @TotalOrders);
+
+    FETCH NEXT FROM ranking_cursor INTO @CustomerID, @TotalOrders;
+END;
+
+CLOSE ranking_cursor;
+DEALLOCATE ranking_cursor;
+
+-- Verificação
+SELECT * FROM Top10Customers;
+```
+
+---
+
+### **17. Marcar pedidos prioritários (> 50 itens)**
+```sql
+ALTER TABLE Orders ADD Priority VARCHAR(10);
+
+DECLARE @OrderID INT, @TotalItems INT;
+
+DECLARE priority_cursor CURSOR FOR
+    SELECT OrderID, SUM(Quantity)
+    FROM [Order Details]
+    GROUP BY OrderID
+    HAVING SUM(Quantity) > 50;
+
+OPEN priority_cursor;
+FETCH NEXT FROM priority_cursor INTO @OrderID, @TotalItems;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    UPDATE Orders
+    SET Priority = 'Prioritário'
+    WHERE OrderID = @OrderID;
+
+    FETCH NEXT FROM priority_cursor INTO @OrderID, @TotalItems;
+END;
+
+CLOSE priority_cursor;
+DEALLOCATE priority_cursor;
+
+-- Verificação
+SELECT OrderID, Priority FROM Orders WHERE Priority = 'Prioritário';
+```
+
+---
+
+### **18. Valor total de produtos por fornecedor**
+```sql
+CREATE TABLE SupplierValue (
+    SupplierID INT,
+    TotalValue DECIMAL(10,2)
+);
+
+DECLARE @SupplierID INT, @TotalValue DECIMAL(10,2);
+
+DECLARE supplier_cursor CURSOR FOR
+    SELECT SupplierID, SUM(UnitPrice * UnitsInStock)
+    FROM Products
+    GROUP BY SupplierID;
+
+OPEN supplier_cursor;
+FETCH NEXT FROM supplier_cursor INTO @SupplierID, @TotalValue;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    BEGIN TRY
+        INSERT INTO SupplierValue (SupplierID, TotalValue)
+        VALUES (@SupplierID, COALESCE(@TotalValue, 0));
+    END TRY
+    BEGIN CATCH
+        PRINT 'Erro no fornecedor ' + CAST(@SupplierID AS VARCHAR) + ': ' + ERROR_MESSAGE();
+    END CATCH;
+
+    FETCH NEXT FROM supplier_cursor INTO @SupplierID, @TotalValue;
+END;
+
+CLOSE supplier_cursor;
+DEALLOCATE supplier_cursor;
+
+-- Verificação
+SELECT * FROM SupplierValue;
+```
+
+---
+
+### **19. Aumento de preço em feriados**
+```sql
+CREATE TABLE HolidayPriceLog (
+    OrderID INT,
+    OldPrice DECIMAL(10,2),
+    NewPrice DECIMAL(10,2)
+);
+
+DECLARE @OrderID INT, @ProductID INT, @UnitPrice DECIMAL(10,2);
+
+DECLARE holiday_cursor CURSOR FOR
+    SELECT od.OrderID, od.ProductID, od.UnitPrice
+    FROM [Order Details] od
+    JOIN Orders o ON od.OrderID = o.OrderID
+    WHERE DATEPART(DAY, o.OrderDate) = 25 AND DATEPART(MONTH, o.OrderDate) = 12;
+
+OPEN holiday_cursor;
+FETCH NEXT FROM holiday_cursor INTO @OrderID, @ProductID, @UnitPrice;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    DECLARE @NewPrice DECIMAL(10,2) = @UnitPrice * 1.05; -- Aumento de 5%
+    UPDATE [Order Details]
+    SET UnitPrice = @NewPrice
+    WHERE OrderID = @OrderID AND ProductID = @ProductID;
+
+    INSERT INTO HolidayPriceLog (OrderID, OldPrice, NewPrice)
+    VALUES (@OrderID, @UnitPrice, @NewPrice);
+
+    FETCH NEXT FROM holiday_cursor INTO @OrderID, @ProductID, @UnitPrice;
+END;
+
+CLOSE holiday_cursor;
+DEALLOCATE holiday_cursor;
+
+-- Verificação
+SELECT * FROM HolidayPriceLog;
+```
+
+---
+
+### **20. Tempo de serviço dos funcionários**
+```sql
+CREATE TABLE EmployeeService (
+    EmployeeID INT,
+    YearsOfService INT
+);
+
+DECLARE @EmployeeID INT, @HireDate DATETIME;
+
+DECLARE service_cursor CURSOR FOR
+    SELECT EmployeeID, HireDate
+    FROM Employees;
+
+OPEN service_cursor;
+FETCH NEXT FROM service_cursor INTO @EmployeeID, @HireDate;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    DECLARE @Years INT = DATEDIFF(YEAR, @HireDate, GETDATE());
+    INSERT INTO EmployeeService (EmployeeID, YearsOfService)
+    VALUES (@EmployeeID, @Years);
+
+    FETCH NEXT FROM service_cursor INTO @EmployeeID, @HireDate;
+END;
+
+CLOSE service_cursor;
+DEALLOCATE service_cursor;
+
+-- Verificação
+SELECT * FROM EmployeeService;
+```
+
+---
+
+Aqui está o gabarito detalhado com soluções em T-SQL para os exercícios de **21 a 40** da lista, focados em **CTEs (Common Table Expressions)** no banco de dados Northwind. Cada solução inclui comentários explicativos e é projetada para explorar cenários avançados. Assumo que você tem acesso ao banco Northwind e que as tabelas padrão (como `Orders`, `Order Details`, `Products`, etc.) estão disponíveis.
+
+---
+
+### **21. Valor total de vendas por categoria em 1997**
+```sql
+WITH SalesByCategory AS (
+    SELECT 
+        c.CategoryID,
+        c.CategoryName,
+        SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) AS TotalSales
+    FROM Categories c
+    JOIN Products p ON c.CategoryID = p.CategoryID
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    JOIN Orders o ON od.OrderID = o.OrderID
+    WHERE YEAR(o.OrderDate) = 1997
+    GROUP BY c.CategoryID, c.CategoryName
+)
+SELECT 
+    CategoryID,
+    CategoryName,
+    TotalSales
+FROM SalesByCategory
+ORDER BY TotalSales DESC;
+
+-- Explicação: A CTE calcula o valor total de vendas com base em Order Details, filtrando pedidos de 1997.
+```
+
+---
+
+### **22. Hierarquia completa de funcionários (recursiva)**
+```sql
+WITH EmployeeHierarchy AS (
+    SELECT 
+        EmployeeID,
+        FirstName + ' ' + LastName AS EmployeeName,
+        ReportsTo,
+        1 AS Level
+    FROM Employees
+    WHERE ReportsTo IS NULL  -- Começa pelo topo (sem chefe)
+    UNION ALL
+    SELECT 
+        e.EmployeeID,
+        e.FirstName + ' ' + e.LastName,
+        e.ReportsTo,
+        eh.Level + 1
+    FROM Employees e
+    INNER JOIN EmployeeHierarchy eh ON e.ReportsTo = eh.EmployeeID
+)
+SELECT 
+    EmployeeID,
+    EmployeeName,
+    ReportsTo AS ManagerID,
+    Level
+FROM EmployeeHierarchy
+ORDER BY Level, EmployeeID;
+
+-- Explicação: CTE recursiva para construir a hierarquia de subordinados com níveis.
+```
+
+---
+
+### **23. 5 clientes com maior gasto médio por pedido**
+```sql
+WITH CustomerAvgSpending AS (
+    SELECT 
+        o.CustomerID,
+        COUNT(o.OrderID) AS TotalOrders,
+        AVG(od.UnitPrice * od.Quantity * (1 - od.Discount)) AS AvgSpending
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY o.CustomerID
+)
+SELECT TOP 5 
+    c.CustomerID,
+    c.CompanyName,
+    cas.TotalOrders,
+    cas.AvgSpending
+FROM CustomerAvgSpending cas
+JOIN Customers c ON cas.CustomerID = c.CustomerID
+ORDER BY cas.AvgSpending DESC;
+
+-- Explicação: A CTE calcula o gasto médio por pedido e o número total de pedidos por cliente.
+```
+
+---
+
+### **24. Total de itens vendidos por fornecedor (não descontinuados)**
+```sql
+WITH SupplierSales AS (
+    SELECT 
+        s.SupplierID,
+        s.CompanyName,
+        SUM(od.Quantity) AS TotalItemsSold
+    FROM Suppliers s
+    JOIN Products p ON s.SupplierID = p.SupplierID
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    WHERE p.Discontinued = 0
+    GROUP BY s.SupplierID, s.CompanyName
+)
+SELECT 
+    SupplierID,
+    CompanyName,
+    TotalItemsSold
+FROM SupplierSales
+ORDER BY TotalItemsSold DESC;
+
+-- Explicação: A CTE soma a quantidade vendida por fornecedor, excluindo produtos descontinuados.
+```
+
+---
+
+### **25. Crescimento mensal de vendas em 1998**
+```sql
+WITH MonthlySales AS (
+    SELECT 
+        YEAR(o.OrderDate) AS Year,
+        MONTH(o.OrderDate) AS Month,
+        SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) AS TotalSales
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    WHERE YEAR(o.OrderDate) = 1998
+    GROUP BY YEAR(o.OrderDate), MONTH(o.OrderDate)
+),
+SalesGrowth AS (
+    SELECT 
+        Year,
+        Month,
+        TotalSales,
+        LAG(TotalSales) OVER (ORDER BY Year, Month) AS PreviousMonthSales,
+        (TotalSales - LAG(TotalSales) OVER (ORDER BY Year, Month)) / 
+            NULLIF(LAG(TotalSales) OVER (ORDER BY Year, Month), 0) * 100 AS GrowthPercent
+    FROM MonthlySales
+)
+SELECT 
+    Year,
+    Month,
+    TotalSales,
+    PreviousMonthSales,
+    ROUND(GrowthPercent, 2) AS GrowthPercent
+FROM SalesGrowth
+ORDER BY Year, Month;
+
+-- Explicação: CTEs aninhadas para calcular vendas mensais e o crescimento percentual em relação ao mês anterior.
+```
+
+---
+
+### **26. Produtos mais vendidos por região (top 3)**
+```sql
+WITH RankedProducts AS (
+    SELECT 
+        o.ShipRegion,
+        p.ProductID,
+        p.ProductName,
+        SUM(od.Quantity) AS TotalSold,
+        ROW_NUMBER() OVER (PARTITION BY o.ShipRegion ORDER BY SUM(od.Quantity) DESC) AS Rank
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    JOIN Products p ON od.ProductID = p.ProductID
+    WHERE o.ShipRegion IS NOT NULL
+    GROUP BY o.ShipRegion, p.ProductID, p.ProductName
+)
+SELECT 
+    ShipRegion,
+    ProductID,
+    ProductName,
+    TotalSold
+FROM RankedProducts
+WHERE Rank <= 3
+ORDER BY ShipRegion, TotalSold DESC;
+
+-- Explicação: A CTE usa ROW_NUMBER para classificar os produtos mais vendidos por região.
+```
+
+---
+
+### **27. Lucro por pedido (top 10)**
+```sql
+WITH OrderProfit AS (
+    SELECT 
+        o.OrderID,
+        SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) - SUM(o.Freight) AS Profit
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY o.OrderID
+)
+SELECT TOP 10
+    OrderID,
+    Profit
+FROM OrderProfit
+ORDER BY Profit DESC;
+
+-- Explicação: A CTE calcula o lucro (vendas - frete) por pedido e retorna os 10 mais lucrativos.
+```
+
+---
+
+### **28. Clientes que compraram em todas as categorias**
+```sql
+WITH CustomerCategories AS (
+    SELECT 
+        o.CustomerID,
+        COUNT(DISTINCT p.CategoryID) AS CategoryCount
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    JOIN Products p ON od.ProductID = p.ProductID
+    GROUP BY o.CustomerID
+    HAVING COUNT(DISTINCT p.CategoryID) = (SELECT COUNT(*) FROM Categories)
+)
+SELECT 
+    c.CustomerID,
+    c.CompanyName,
+    cc.CategoryCount
+FROM CustomerCategories cc
+JOIN Customers c ON cc.CustomerID = c.CustomerID;
+
+-- Explicação: A CTE verifica quais clientes compraram em todas as categorias disponíveis.
+```
+
+---
+
+### **29. Total acumulado de vendas por dia em um mês (recursivo)**
+```sql
+WITH DailySales AS (
+    SELECT 
+        CAST(OrderDate AS DATE) AS SaleDate,
+        SUM(UnitPrice * Quantity * (1 - Discount)) AS DailyTotal
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    WHERE MONTH(o.OrderDate) = 1 AND YEAR(o.OrderDate) = 1998
+    GROUP BY CAST(OrderDate AS DATE)
+),
+CumulativeSales AS (
+    SELECT 
+        SaleDate,
+        DailyTotal,
+        DailyTotal AS RunningTotal
+    FROM DailySales
+    WHERE SaleDate = (SELECT MIN(SaleDate) FROM DailySales)
+    UNION ALL
+    SELECT 
+        ds.SaleDate,
+        ds.DailyTotal,
+        cs.RunningTotal + ds.DailyTotal
+    FROM DailySales ds
+    INNER JOIN CumulativeSales cs ON ds.SaleDate = DATEADD(DAY, 1, cs.SaleDate)
+)
+SELECT 
+    SaleDate,
+    DailyTotal,
+    RunningTotal
+FROM CumulativeSales
+ORDER BY SaleDate;
+
+-- Explicação: CTE recursiva para acumular vendas diárias em janeiro de 1998.
+```
+
+---
+
+### **30. Fornecedores com mais produtos em estoque baixo**
+```sql
+WITH LowStockSuppliers AS (
+    SELECT 
+        s.SupplierID,
+        s.CompanyName,
+        COUNT(*) AS LowStockProducts
+    FROM Suppliers s
+    JOIN Products p ON s.SupplierID = p.SupplierID
+    WHERE p.UnitsInStock < 10
+    GROUP BY s.SupplierID, s.CompanyName
+)
+SELECT 
+    SupplierID,
+    CompanyName,
+    LowStockProducts
+FROM LowStockSuppliers
+ORDER BY LowStockProducts DESC;
+
+-- Explicação: A CTE identifica fornecedores com produtos em estoque baixo (< 10 unidades).
+```
+
+---
+
+### **31. Média de frete por país e países acima da média global**
+```sql
+WITH FreightByCountry AS (
+    SELECT 
+        ShipCountry,
+        AVG(Freight) AS AvgFreight
+    FROM Orders
+    WHERE ShipCountry IS NOT NULL
+    GROUP BY ShipCountry
+),
+GlobalFreight AS (
+    SELECT AVG(Freight) AS GlobalAvgFreight
+    FROM Orders
+)
+SELECT 
+    fbc.ShipCountry,
+    fbc.AvgFreight,
+    gf.GlobalAvgFreight,
+    CASE WHEN fbc.AvgFreight > gf.GlobalAvgFreight THEN 'Acima da Média' ELSE 'Abaixo da Média' END AS Status
+FROM FreightByCountry fbc
+CROSS JOIN GlobalFreight gf
+ORDER BY fbc.AvgFreight DESC;
+
+-- Explicação: CTEs para calcular a média de frete por país e compará-la com a média global.
+```
+
+---
+
+### **32. Produtos com maior variação de preço**
+```sql
+WITH PriceVariation AS (
+    SELECT 
+        p.ProductID,
+        p.ProductName,
+        MIN(od.UnitPrice) AS MinPrice,
+        MAX(od.UnitPrice) AS MaxPrice,
+        MAX(od.UnitPrice) - MIN(od.UnitPrice) AS PriceVariation
+    FROM Products p
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    GROUP BY p.ProductID, p.ProductName
+)
+SELECT 
+    ProductID,
+    ProductName,
+    MinPrice,
+    MaxPrice,
+    PriceVariation
+FROM PriceVariation
+WHERE PriceVariation > 0
+ORDER BY PriceVariation DESC;
+
+-- Explicação: A CTE calcula a diferença entre o maior e o menor preço vendido por produto.
+```
+
+---
+
+### **33. Empregados com mais pedidos que a média**
+```sql
+WITH EmployeeOrders AS (
+    SELECT 
+        EmployeeID,
+        COUNT(OrderID) AS OrderCount
+    FROM Orders
+    GROUP BY EmployeeID
+),
+AvgOrders AS (
+    SELECT AVG(OrderCount) AS AvgOrderCount
+    FROM EmployeeOrders
+)
+SELECT 
+    e.EmployeeID,
+    e.FirstName + ' ' + e.LastName AS EmployeeName,
+    eo.OrderCount,
+    ao.AvgOrderCount AS CompanyAverage
+FROM EmployeeOrders eo
+JOIN Employees e ON eo.EmployeeID = e.EmployeeID
+CROSS JOIN AvgOrders ao
+WHERE eo.OrderCount > ao.AvgOrderCount
+ORDER BY eo.OrderCount DESC;
+
+-- Explicação: CTEs para comparar o número de pedidos por funcionário com a média geral.
+```
+
+---
+
+### **34. Vendas por trimestre e percentual em relação ao ano anterior**
+```sql
+WITH QuarterlySales AS (
+    SELECT 
+        YEAR(OrderDate) AS Year,
+        DATEPART(QUARTER, OrderDate) AS Quarter,
+        SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) AS TotalSales
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY YEAR(OrderDate), DATEPART(QUARTER, OrderDate)
+)
+SELECT 
+    Year,
+    Quarter,
+    TotalSales,
+    LAG(TotalSales) OVER (PARTITION BY Quarter ORDER BY Year) AS PreviousYearSales,
+    ROUND((TotalSales - LAG(TotalSales) OVER (PARTITION BY Quarter ORDER BY Year)) / 
+        NULLIF(LAG(TotalSales) OVER (PARTITION BY Quarter ORDER BY Year), 0) * 100, 2) AS PercentChange
+FROM QuarterlySales
+ORDER BY Year, Quarter;
+
+-- Explicação: A CTE calcula vendas trimestrais e usa LAG para comparar com o ano anterior.
+```
+
+---
+
+### **35. Clientes que compraram os mesmos produtos em pedidos diferentes**
+```sql
+WITH CustomerProductOrders AS (
+    SELECT 
+        o.CustomerID,
+        od.ProductID,
+        COUNT(DISTINCT o.OrderID) AS OrderCount
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY o.CustomerID, od.ProductID
+    HAVING COUNT(DISTINCT o.OrderID) > 1
+)
+SELECT 
+    c.CustomerID,
+    c.CompanyName,
+    p.ProductName,
+    cpo.OrderCount
+FROM CustomerProductOrders cpo
+JOIN Customers c ON cpo.CustomerID = c.CustomerID
+JOIN Products p ON cpo.ProductID = p.ProductID
+ORDER BY c.CustomerID, cpo.OrderCount DESC;
+
+-- Explicação: A CTE identifica clientes que compraram o mesmo produto em mais de um pedido.
+```
+
+---
+
+### **36. Quantidade de pedidos e tempo médio entre pedidos**
+```sql
+WITH OrderDates AS (
+    SELECT 
+        CustomerID,
+        OrderID,
+        OrderDate,
+        LAG(OrderDate) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS PreviousOrderDate
+    FROM Orders
+),
+TimeBetweenOrders AS (
+    SELECT 
+        CustomerID,
+        COUNT(OrderID) AS TotalOrders,
+        AVG(CAST(DATEDIFF(DAY, PreviousOrderDate, OrderDate) AS FLOAT)) AS AvgDaysBetween
+    FROM OrderDates
+    WHERE PreviousOrderDate IS NOT NULL
+    GROUP BY CustomerID
+)
+SELECT 
+    c.CustomerID,
+    c.CompanyName,
+    tbo.TotalOrders,
+    ROUND(tbo.AvgDaysBetween, 2) AS AvgDaysBetweenOrders
+FROM TimeBetweenOrders tbo
+JOIN Customers c ON tbo.CustomerID = c.CustomerID
+ORDER BY tbo.TotalOrders DESC;
+
+-- Explicação: CTEs para calcular o número de pedidos e o tempo médio entre pedidos consecutivos.
+```
+
+---
+
+### **37. Caminho completo de entrega (recursivo)**
+```sql
+WITH DeliveryPath AS (
+    SELECT 
+        OrderID,
+        ShipCity AS Path,
+        ShipRegion,
+        ShipCountry,
+        1 AS Level
+    FROM Orders
+    WHERE ShipCity IS NOT NULL
+    UNION ALL
+    SELECT 
+        dp.OrderID,
+        dp.Path + ', ' + COALESCE(dp.ShipRegion, 'N/A'),
+        dp.ShipCountry,
+        NULL,
+        dp.Level + 1
+    FROM DeliveryPath dp
+    WHERE dp.Level = 1
+    UNION ALL
+    SELECT 
+        dp.OrderID,
+        dp.Path + ', ' + dp.ShipCountry,
+        NULL,
+        NULL,
+        dp.Level + 1
+    FROM DeliveryPath dp
+    WHERE dp.Level = 2
+)
+SELECT 
+    OrderID,
+    Path AS FullDeliveryPath
+FROM DeliveryPath
+WHERE Level = 3
+ORDER BY OrderID;
+
+-- Explicação: CTE recursiva para concatenar cidade, região e país como um caminho completo.
+```
+
+---
+
+### **38. Produtos com estoque zerado e pedidos pendentes**
+```sql
+WITH ZeroStock AS (
+    SELECT 
+        ProductID,
+        ProductName,
+        UnitsInStock,
+        UnitsOnOrder
+    FROM Products
+    WHERE UnitsInStock = 0
+)
+SELECT 
+    ProductID,
+    ProductName,
+    UnitsInStock,
+    UnitsOnOrder
+FROM ZeroStock
+WHERE UnitsOnOrder > 0
+ORDER BY UnitsOnOrder DESC;
+
+-- Explicação: A CTE lista produtos sem estoque e com pedidos pendentes.
+```
+
+---
+
+### **39. Ticket médio por funcionário e desempenho acima da média**
+```sql
+WITH EmployeeTicket AS (
+    SELECT 
+        o.EmployeeID,
+        AVG(od.UnitPrice * od.Quantity * (1 - od.Discount)) AS AvgTicket
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY o.EmployeeID
+),
+CompanyAvg AS (
+    SELECT AVG(AvgTicket) AS CompanyAvgTicket
+    FROM EmployeeTicket
+)
+SELECT 
+    e.EmployeeID,
+    e.FirstName + ' ' + e.LastName AS EmployeeName,
+    et.AvgTicket,
+    ca.CompanyAvgTicket,
+    CASE WHEN et.AvgTicket > ca.CompanyAvgTicket THEN 'Acima da Média' ELSE 'Abaixo da Média' END AS Performance
+FROM EmployeeTicket et
+JOIN Employees e ON et.EmployeeID = e.EmployeeID
+CROSS JOIN CompanyAvg ca
+ORDER BY et.AvgTicket DESC;
+
+-- Explicação: CTEs para calcular o ticket médio por funcionário e compará-lo com a média da empresa.
+```
+
+---
+
+### **40. 5 produtos mais vendidos por categoria**
+```sql
+WITH RankedProducts AS (
+    SELECT 
+        c.CategoryID,
+        c.CategoryName,
+        p.ProductID,
+        p.ProductName,
+        SUM(od.Quantity) AS TotalSold,
+        SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) AS TotalSales,
+        SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) / 
+            SUM(SUM(od.UnitPrice * od.Quantity * (1 - od.Discount))) OVER (PARTITION BY c.CategoryID) * 100 AS SalesPercent,
+        ROW_NUMBER() OVER (PARTITION BY c.CategoryID ORDER BY SUM(od.Quantity) DESC) AS Rank
+    FROM Categories c
+    JOIN Products p ON c.CategoryID = p.CategoryID
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    GROUP BY c.CategoryID, c.CategoryName, p.ProductID, p.ProductName
+)
+SELECT 
+    CategoryID,
+    CategoryName,
+    ProductID,
+    ProductName,
+    TotalSold,
+    TotalSales,
+    ROUND(SalesPercent, 2) AS SalesPercent
+FROM RankedProducts
+WHERE Rank <= 5
+ORDER BY CategoryID, TotalSold DESC;
+
+-- Explicação: A CTE classifica os produtos mais vendidos por categoria e calcula o percentual de vendas.
+```
+
+---
+
+Aqui está o gabarito detalhado com soluções em T-SQL para os exercícios de **41 a 60** da lista, focados em **tratamento de erros** no banco de dados Northwind. Cada solução utiliza blocos `TRY-CATCH` para lidar com exceções, inclui logs para auditoria e explora cenários avançados de manipulação de dados. Assumo que você tem acesso ao banco Northwind e permissões para criar tabelas auxiliares.
+
+---
+
+### **41. Atualizar preços evitando valores negativos**
+```sql
+CREATE TABLE PriceUpdateLog (
+    ProductID INT,
+    OldPrice DECIMAL(10,2),
+    NewPrice DECIMAL(10,2),
+    UpdateDate DATETIME,
+    ErrorMessage NVARCHAR(255)
+);
+
+BEGIN TRY
+    BEGIN TRANSACTION;
+    UPDATE Products
+    SET UnitPrice = UnitPrice * 1.10  -- Aumento de 10%
+    OUTPUT 
+        deleted.ProductID,
+        deleted.UnitPrice AS OldPrice,
+        inserted.UnitPrice AS NewPrice,
+        GETDATE(),
+        NULL
+    INTO PriceUpdateLog (ProductID, OldPrice, NewPrice, UpdateDate, ErrorMessage)
+    WHERE UnitPrice > 0;
+
+    IF EXISTS (SELECT 1 FROM Products WHERE UnitPrice < 0)
+        THROW 50001, 'Preço negativo detectado após atualização.', 1;
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO PriceUpdateLog (ProductID, OldPrice, NewPrice, UpdateDate, ErrorMessage)
+    VALUES (NULL, NULL, NULL, GETDATE(), ERROR_MESSAGE());
+    PRINT 'Erro: ' + ERROR_MESSAGE();
+END CATCH;
+
+-- Verificação
+SELECT * FROM PriceUpdateLog;
+```
+
+---
+
+### **42. Divisão por zero em Freight**
+```sql
+CREATE TABLE FreightErrorLog (
+    OrderID INT,
+    Freight DECIMAL(10,2),
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+BEGIN TRY
+    INSERT INTO FreightErrorLog (OrderID, Freight, ErrorMessage, LogDate)
+    SELECT 
+        OrderID,
+        Freight,
+        'Tentativa de divisão por zero',
+        GETDATE()
+    FROM Orders
+    WHERE Freight / 0 IS NOT NULL;  -- Força erro
+END TRY
+BEGIN CATCH
+    INSERT INTO FreightErrorLog (OrderID, Freight, ErrorMessage, LogDate)
+    SELECT 
+        OrderID,
+        Freight,
+        ERROR_MESSAGE(),
+        GETDATE()
+    FROM Orders;
+    PRINT 'Erro capturado: ' + ERROR_MESSAGE();
+END CATCH;
+
+-- Verificação
+SELECT * FROM FreightErrorLog;
+```
+
+---
+
+### **43. Inserir clientes com validação de duplicatas**
+```sql
+CREATE TABLE CustomerInsertLog (
+    CustomerID NCHAR(5),
+    CompanyName NVARCHAR(40),
+    InsertDate DATETIME,
+    ErrorMessage NVARCHAR(255)
+);
+
+BEGIN TRY
+    BEGIN TRANSACTION;
+    INSERT INTO Customers (CustomerID, CompanyName, ContactName)
+    VALUES ('TEST1', 'Test Company', 'John Doe');
+
+    IF EXISTS (SELECT 1 FROM Customers WHERE CustomerID = 'TEST1')
+        THROW 50002, 'Cliente já existe.', 1;
+
+    COMMIT TRANSACTION;
+    INSERT INTO CustomerInsertLog (CustomerID, CompanyName, InsertDate, ErrorMessage)
+    VALUES ('TEST1', 'Test Company', GETDATE(), NULL);
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO CustomerInsertLog (CustomerID, CompanyName, InsertDate, ErrorMessage)
+    VALUES ('TEST1', 'Test Company', GETDATE(), ERROR_MESSAGE());
+    PRINT 'Erro: ' + ERROR_MESSAGE();
+END CATCH;
+
+-- Verificação
+SELECT * FROM CustomerInsertLog;
+```
+
+---
+
+### **44. Atualizar ShippedDate com data futura inválida**
+```sql
+CREATE TABLE ShippingErrorLog (
+    OrderID INT,
+    OldShippedDate DATETIME,
+    NewShippedDate DATETIME,
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+DECLARE @OrderID INT, @ShippedDate DATETIME;
+
+DECLARE shipping_cursor CURSOR FOR
+    SELECT OrderID, ShippedDate
+    FROM Orders;
+
+OPEN shipping_cursor;
+FETCH NEXT FROM shipping_cursor INTO @OrderID, @ShippedDate;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    BEGIN TRY
+        DECLARE @NewDate DATETIME = DATEADD(YEAR, 100, GETDATE()); -- Data futura inválida
+        UPDATE Orders
+        SET ShippedDate = @NewDate
+        WHERE OrderID = @OrderID;
+
+        IF @NewDate > '9999-12-31'
+            THROW 50003, 'Data fora do intervalo permitido.', 1;
+    END TRY
+    BEGIN CATCH
+        INSERT INTO ShippingErrorLog (OrderID, OldShippedDate, NewShippedDate, ErrorMessage, LogDate)
+        VALUES (@OrderID, @ShippedDate, @NewDate, ERROR_MESSAGE(), GETDATE());
+    END CATCH;
+
+    FETCH NEXT FROM shipping_cursor INTO @OrderID, @ShippedDate;
+END;
+
+CLOSE shipping_cursor;
+DEALLOCATE shipping_cursor;
+
+-- Verificação
+SELECT * FROM ShippingErrorLog;
+```
+
+---
+
+### **45. Total de vendas por categoria com erro de conversão**
+```sql
+CREATE TABLE SalesErrorLog (
+    CategoryID INT,
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+BEGIN TRY
+    SELECT 
+        p.CategoryID,
+        SUM(CAST(od.UnitPrice AS INT) * od.Quantity * (1 - od.Discount)) AS TotalSales  -- Força erro de conversão
+    FROM Products p
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    GROUP BY p.CategoryID;
+END TRY
+BEGIN CATCH
+    INSERT INTO SalesErrorLog (CategoryID, ErrorMessage, LogDate)
+    SELECT 
+        CategoryID,
+        ERROR_MESSAGE(),
+        GETDATE()
+    FROM Products;
+    PRINT 'Erro: ' + ERROR_MESSAGE();
+END CATCH;
+
+-- Verificação
+SELECT * FROM SalesErrorLog;
+```
+
+---
+
+### **46. Recalcular descontos evitando valores negativos**
+```sql
+CREATE TABLE DiscountErrorLog (
+    OrderID INT,
+    ProductID INT,
+    OldDiscount REAL,
+    NewDiscount REAL,
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+BEGIN TRY
+    BEGIN TRANSACTION;
+    UPDATE [Order Details]
+    SET Discount = Discount - 0.1
+    OUTPUT 
+        deleted.OrderID,
+        deleted.ProductID,
+        deleted.Discount,
+        inserted.Discount,
+        NULL,
+        GETDATE()
+    INTO DiscountErrorLog (OrderID, ProductID, OldDiscount, NewDiscount, ErrorMessage, LogDate);
+
+    IF EXISTS (SELECT 1 FROM [Order Details] WHERE Discount < 0)
+        THROW 50004, 'Desconto negativo detectado.', 1;
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO DiscountErrorLog (OrderID, ProductID, OldDiscount, NewDiscount, ErrorMessage, LogDate)
+    SELECT OrderID, ProductID, Discount, NULL, ERROR_MESSAGE(), GETDATE()
+    FROM [Order Details];
+    PRINT 'Erro: ' + ERROR_MESSAGE();
+END CATCH;
+
+-- Verificação
+SELECT * FROM DiscountErrorLog;
+```
+
+---
+
+### **47. Excluir produtos descontinuados com erro de chave estrangeira**
+```sql
+CREATE TABLE DeleteErrorLog (
+    ProductID INT,
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+BEGIN TRY
+    BEGIN TRANSACTION;
+    DELETE FROM Products
+    WHERE Discontinued = 1; -- Pode falhar devido a FK em Order Details
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO DeleteErrorLog (ProductID, ErrorMessage, LogDate)
+    SELECT ProductID, ERROR_MESSAGE(), GETDATE()
+    FROM Products
+    WHERE Discontinued = 1;
+    PRINT 'Erro: ' + ERROR_MESSAGE();
+END CATCH;
+
+-- Verificação
+SELECT * FROM DeleteErrorLog;
+```
+
+---
+
+### **48. Inserir pedidos duplicados**
+```sql
+CREATE TABLE OrderInsertLog (
+    OrderID INT,
+    CustomerID NCHAR(5),
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+BEGIN TRY
+    BEGIN TRANSACTION;
+    INSERT INTO Orders (OrderID, CustomerID, OrderDate)
+    SELECT OrderID, CustomerID, OrderDate
+    FROM Orders; -- Força duplicatas
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO OrderInsertLog (OrderID, CustomerID, ErrorMessage, LogDate)
+    SELECT OrderID, CustomerID, ERROR_MESSAGE(), GETDATE()
+    FROM Orders;
+    PRINT 'Erro: ' + ERROR_MESSAGE();
+END CATCH;
+
+-- Verificação
+SELECT * FROM OrderInsertLog;
+```
+
+---
+
+### **49. Lucro por pedido com tratamento de nulos**
+```sql
+CREATE TABLE ProfitErrorLog (
+    OrderID INT,
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+WITH OrderProfit AS (
+    SELECT 
+        OrderID,
+        SUM(UnitPrice * Quantity * (1 - Discount)) AS Profit
+    FROM [Order Details]
+    GROUP BY OrderID
+)
+BEGIN TRY
+    SELECT 
+        OrderID,
+        Profit / NULLIF(0, 0) AS AdjustedProfit -- Força erro com nulo
+    FROM OrderProfit;
+END TRY
+BEGIN CATCH
+    INSERT INTO ProfitErrorLog (OrderID, ErrorMessage, LogDate)
+    SELECT OrderID, ERROR_MESSAGE(), GETDATE()
+    FROM OrderProfit;
+    PRINT 'Erro: ' + ERROR_MESSAGE();
+END CATCH;
+
+-- Verificação
+SELECT * FROM ProfitErrorLog;
+```
+
+---
+
+### **50. Atualizar HireDate com data inválida**
+```sql
+CREATE TABLE HireDateErrorLog (
+    EmployeeID INT,
+    OldHireDate DATETIME,
+    NewHireDate DATETIME,
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+DECLARE @EmployeeID INT, @HireDate DATETIME;
+
+DECLARE hire_cursor CURSOR FOR
+    SELECT EmployeeID, HireDate
+    FROM Employees;
+
+OPEN hire_cursor;
+FETCH NEXT FROM hire_cursor INTO @EmployeeID, @HireDate;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    BEGIN TRY
+        DECLARE @NewHireDate DATETIME = '9999-12-31 23:59:59.999' + 1; -- Força erro
+        UPDATE Employees
+        SET HireDate = @NewHireDate
+        WHERE EmployeeID = @EmployeeID;
+    END TRY
+    BEGIN CATCH
+        INSERT INTO HireDateErrorLog (EmployeeID, OldHireDate, NewHireDate, ErrorMessage, LogDate)
+        VALUES (@EmployeeID, @HireDate, @NewHireDate, ERROR_MESSAGE(), GETDATE());
+    END CATCH;
+
+    FETCH NEXT FROM hire_cursor INTO @EmployeeID, @HireDate;
+END;
+
+CLOSE hire_cursor;
+DEALLOCATE hire_cursor;
+
+-- Verificação
+SELECT * FROM HireDateErrorLog;
+```
+
+---
+
+### **51. Atualizar estoque com valores inválidos**
+```sql
+CREATE TABLE StockErrorLog (
+    ProductID INT,
+    OldStock INT,
+    NewStock INT,
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+BEGIN TRY
+    BEGIN TRANSACTION;
+    UPDATE Products
+    SET UnitsInStock = UnitsInStock - 1000  -- Força valores negativos
+    OUTPUT 
+        deleted.ProductID,
+        deleted.UnitsInStock,
+        inserted.UnitsInStock,
+        NULL,
+        GETDATE()
+    INTO StockErrorLog (ProductID, OldStock, NewStock, ErrorMessage, LogDate);
+
+    IF EXISTS (SELECT 1 FROM Products WHERE UnitsInStock < 0)
+        THROW 50005, 'Estoque negativo não permitido.', 1;
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO StockErrorLog (ProductID, OldStock, NewStock, ErrorMessage, LogDate)
+    SELECT ProductID, UnitsInStock, NULL, ERROR_MESSAGE(), GETDATE()
+    FROM Products;
+    PRINT 'Erro: ' + ERROR_MESSAGE();
+END CATCH;
+
+-- Verificação
+SELECT * FROM StockErrorLog;
+```
+
+---
+
+### **52. Inserir fornecedores duplicados**
+```sql
+CREATE TABLE SupplierInsertLog (
+    SupplierID INT,
+    CompanyName NVARCHAR(40),
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+BEGIN TRY
+    BEGIN TRANSACTION;
+    INSERT INTO Suppliers (SupplierID, CompanyName)
+    SELECT SupplierID, CompanyName
+    FROM Suppliers; -- Força duplicatas
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO SupplierInsertLog (SupplierID, CompanyName, ErrorMessage, LogDate)
+    SELECT SupplierID, CompanyName, ERROR_MESSAGE(), GETDATE()
+    FROM Suppliers;
+    PRINT 'Erro: ' + ERROR_MESSAGE();
+END CATCH;
+
+-- Verificação
+SELECT * FROM SupplierInsertLog;
+```
+
+---
+
+### **53. Tempo de entrega médio com datas ausentes**
+```sql
+CREATE TABLE DeliveryErrorLog (
+    OrderID INT,
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+BEGIN TRY
+    SELECT 
+        OrderID,
+        DATEDIFF(DAY, OrderDate, ShippedDate) / NULLIF(0, 0) AS AvgDeliveryDays -- Força erro
+    FROM Orders
+    WHERE ShippedDate IS NULL;
+END TRY
+BEGIN CATCH
+    INSERT INTO DeliveryErrorLog (OrderID, ErrorMessage, LogDate)
+    SELECT OrderID, ERROR_MESSAGE(), GETDATE()
+    FROM Orders
+    WHERE ShippedDate IS NULL;
+    PRINT 'Erro: ' + ERROR_MESSAGE();
+END CATCH;
+
+-- Verificação
+SELECT * FROM DeliveryErrorLog;
+```
+
+---
+
+### **54. Percentual de vendas com divisão por zero**
+```sql
+CREATE TABLE PercentErrorLog (
+    OrderID INT,
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+WITH SalesCTE AS (
+    SELECT 
+        OrderID,
+        SUM(UnitPrice * Quantity * (1 - Discount)) AS TotalSales
+    FROM [Order Details]
+    GROUP BY OrderID
+)
+BEGIN TRY
+    SELECT 
+        OrderID,
+        TotalSales / 0 AS SalesPercent -- Força erro
+    FROM SalesCTE;
+END TRY
+BEGIN CATCH
+    INSERT INTO PercentErrorLog (OrderID, ErrorMessage, LogDate)
+    SELECT OrderID, ERROR_MESSAGE(), GETDATE()
+    FROM SalesCTE;
+    PRINT 'Erro: ' + ERROR_MESSAGE();
+END CATCH;
+
+-- Verificação
+SELECT * FROM PercentErrorLog;
+```
+
+---
+
+### **55. Descontos maiores que 100%**
+```sql
+CREATE TABLE DiscountLimitLog (
+    OrderID INT,
+    ProductID INT,
+    OldDiscount REAL,
+    NewDiscount REAL,
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+DECLARE @OrderID INT, @ProductID INT, @Discount REAL;
+
+DECLARE discount_cursor CURSOR FOR
+    SELECT OrderID, ProductID, Discount
+    FROM [Order Details];
+
+OPEN discount_cursor;
+FETCH NEXT FROM discount_cursor INTO @OrderID, @ProductID, @Discount;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    BEGIN TRY
+        DECLARE @NewDiscount REAL = @Discount + 1.5; -- Desconto > 100%
+        IF @NewDiscount > 1
+            THROW 50006, 'Desconto maior que 100%.', 1;
+
+        UPDATE [Order Details]
+        SET Discount = @NewDiscount
+        WHERE OrderID = @OrderID AND ProductID = @ProductID;
+    END TRY
+    BEGIN CATCH
+        INSERT INTO DiscountLimitLog (OrderID, ProductID, OldDiscount, NewDiscount, ErrorMessage, LogDate)
+        VALUES (@OrderID, @ProductID, @Discount, @NewDiscount, ERROR_MESSAGE(), GETDATE());
+    END CATCH;
+
+    FETCH NEXT FROM discount_cursor INTO @OrderID, @ProductID, @Discount;
+END;
+
+CLOSE discount_cursor;
+DEALLOCATE discount_cursor;
+
+-- Verificação
+SELECT * FROM DiscountLimitLog;
+```
+
+---
+
+### **56. Atualizar Phone com formato inválido**
+```sql
+CREATE TABLE PhoneErrorLog (
+    CustomerID NCHAR(5),
+    OldPhone NVARCHAR(24),
+    NewPhone NVARCHAR(24),
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+BEGIN TRY
+    BEGIN TRANSACTION;
+    UPDATE Customers
+    SET Phone = CAST(Phone AS INT) -- Força erro de conversão
+    OUTPUT 
+        deleted.CustomerID,
+        deleted.Phone,
+        inserted.Phone,
+        NULL,
+        GETDATE()
+    INTO PhoneErrorLog (CustomerID, OldPhone, NewPhone, ErrorMessage, LogDate);
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO PhoneErrorLog (CustomerID, OldPhone, NewPhone, ErrorMessage, LogDate)
+    SELECT CustomerID, Phone, NULL, ERROR_MESSAGE(), GETDATE()
+    FROM Customers;
+    PRINT 'Erro: ' + ERROR_MESSAGE();
+END CATCH;
+
+-- Verificação
+SELECT * FROM PhoneErrorLog;
+```
+
+---
+
+### **57. Inserir produtos com CategoryID inexistente**
+```sql
+CREATE TABLE ProductInsertLog (
+    ProductID INT,
+    ProductName NVARCHAR(40),
+    CategoryID INT,
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+BEGIN TRY
+    BEGIN TRANSACTION;
+    INSERT INTO Products (ProductID, ProductName, CategoryID)
+    VALUES (999, 'Test Product', 999); -- CategoryID inválido
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+    INSERT INTO ProductInsertLog (ProductID, ProductName, CategoryID, ErrorMessage, LogDate)
+    VALUES (999, 'Test Product', 999, ERROR_MESSAGE(), GETDATE());
+    PRINT 'Erro: ' + ERROR_MESSAGE();
+END CATCH;
+
+-- Verificação
+SELECT * FROM ProductInsertLog;
+```
+
+---
+
+### **58. Total de pedidos por cliente com overflow**
+```sql
+CREATE TABLE OverflowErrorLog (
+    CustomerID NCHAR(5),
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+BEGIN TRY
+    SELECT 
+        CustomerID,
+        SUM(CAST(OrderID AS BIGINT) * 1000000000) AS TotalOrders -- Força overflow
+    FROM Orders
+    GROUP BY CustomerID;
+END TRY
+BEGIN CATCH
+    INSERT INTO OverflowErrorLog (CustomerID, ErrorMessage, LogDate)
+    SELECT CustomerID, ERROR_MESSAGE(), GETDATE()
+    FROM Orders;
+    PRINT 'Erro: ' + ERROR_MESSAGE();
+END CATCH;
+
+-- Verificação
+SELECT * FROM OverflowErrorLog;
+```
+
+---
+
+### **59. Acessar tabela inexistente em CTE**
+```sql
+CREATE TABLE TableErrorLog (
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+BEGIN TRY
+    WITH InvalidCTE AS (
+        SELECT * FROM Orders2 -- Tabela inexistente
+    )
+    SELECT * FROM InvalidCTE;
+END TRY
+BEGIN CATCH
+    INSERT INTO TableErrorLog (ErrorMessage, LogDate)
+    VALUES (ERROR_MESSAGE(), GETDATE());
+    PRINT 'Erro: ' + ERROR_MESSAGE();
+END CATCH;
+
+-- Verificação
+SELECT * FROM TableErrorLog;
+```
+
+---
+
+### **60. Divisão por zero em estoque**
+```sql
+CREATE TABLE StockDivisionLog (
+    ProductID INT,
+    UnitsInStock INT,
+    ErrorMessage NVARCHAR(255),
+    LogDate DATETIME
+);
+
+DECLARE @ProductID INT, @UnitsInStock INT;
+
+DECLARE stock_cursor CURSOR FOR
+    SELECT ProductID, UnitsInStock
+    FROM Products;
+
+OPEN stock_cursor;
+FETCH NEXT FROM stock_cursor INTO @ProductID, @UnitsInStock;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    BEGIN TRY
+        DECLARE @Result INT = @UnitsInStock / 0; -- Força erro
+    END TRY
+    BEGIN CATCH
+        INSERT INTO StockDivisionLog (ProductID, UnitsInStock, ErrorMessage, LogDate)
+        VALUES (@ProductID, @UnitsInStock, ERROR_MESSAGE(), GETDATE());
+    END CATCH;
+
+    FETCH NEXT FROM stock_cursor INTO @ProductID, @UnitsInStock;
+END;
+
+CLOSE stock_cursor;
+DEALLOCATE stock_cursor;
+
+-- Verificação
+SELECT * FROM StockDivisionLog;
+```
+
+---

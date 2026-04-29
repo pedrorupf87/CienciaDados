@@ -1,0 +1,1632 @@
+### **1. Valor total de vendas por cliente com mais de 10 pedidos**
+```sql
+WITH VendasPorCliente AS (
+    SELECT 
+        CustomerID,
+        COUNT(OrderID) AS TotalPedidos,
+        SUM(Freight) AS ValorTotal
+    FROM Orders
+    GROUP BY CustomerID
+)
+SELECT 
+    CustomerID, 
+    TotalPedidos, 
+    ValorTotal
+FROM VendasPorCliente
+WHERE TotalPedidos > 10;
+```
+
+---
+
+### **2. Valor total de cada pedido (top 5 mais caros)**
+```sql
+WITH TotalPorPedido AS (
+    SELECT 
+        od.OrderID,
+        SUM(od.Quantity * od.UnitPrice) AS TotalValor
+    FROM [Order Details] od
+    GROUP BY od.OrderID
+)
+SELECT TOP 5
+    OrderID,
+    TotalValor
+FROM TotalPorPedido
+ORDER BY TotalValor DESC;
+```
+
+---
+
+### **3. Ranking de categorias pelo total de vendas (top 3)**
+```sql
+WITH VendasPorCategoria AS (
+    SELECT 
+        c.CategoryID,
+        c.CategoryName,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM [Order Details] od
+    JOIN Products p ON od.ProductID = p.ProductID
+    JOIN Categories c ON p.CategoryID = c.CategoryID
+    GROUP BY c.CategoryID, c.CategoryName
+)
+SELECT TOP 3
+    CategoryID,
+    CategoryName,
+    TotalVendas
+FROM VendasPorCategoria
+ORDER BY TotalVendas DESC;
+```
+
+---
+
+### **4. Média de vendas por produto em cada categoria**
+```sql
+WITH VendasPorProduto AS (
+    SELECT 
+        p.CategoryID,
+        p.ProductID,
+        AVG(od.Quantity * od.UnitPrice) AS MediaVendas
+    FROM [Order Details] od
+    JOIN Products p ON od.ProductID = p.ProductID
+    GROUP BY p.CategoryID, p.ProductID
+)
+SELECT 
+    CategoryID,
+    ProductID,
+    MediaVendas
+FROM VendasPorProduto
+ORDER BY CategoryID, MediaVendas DESC;
+```
+
+---
+
+### **5. Funcionários com vendas acima da média total**
+```sql
+WITH MediaVendasTotal AS (
+    SELECT 
+        AVG(od.Quantity * od.UnitPrice) AS MediaGeral
+    FROM [Order Details] od
+)
+, VendasPorFuncionario AS (
+    SELECT 
+        o.EmployeeID,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM [Order Details] od
+    JOIN Orders o ON od.OrderID = o.OrderID
+    GROUP BY o.EmployeeID
+)
+SELECT 
+    EmployeeID,
+    TotalVendas
+FROM VendasPorFuncionario, MediaVendasTotal
+WHERE TotalVendas > MediaGeral;
+```
+
+---
+
+### **6. Produtos vendidos em pelo menos 3 países**
+```sql
+WITH ProdutosPorPais AS (
+    SELECT 
+        p.ProductID,
+        COUNT(DISTINCT o.ShipCountry) AS Paises
+    FROM [Order Details] od
+    JOIN Products p ON od.ProductID = p.ProductID
+    JOIN Orders o ON od.OrderID = o.OrderID
+    GROUP BY p.ProductID
+)
+SELECT 
+    ProductID,
+    Paises
+FROM ProdutosPorPais
+WHERE Paises >= 3;
+```
+
+---
+
+### **7. Clientes com pedidos de frete acima da média**
+```sql
+WITH MediaFrete AS (
+    SELECT 
+        AVG(Freight) AS MediaFrete
+    FROM Orders
+)
+, ClientesFrete AS (
+    SELECT 
+        CustomerID,
+        AVG(Freight) AS MediaFreteCliente
+    FROM Orders
+    GROUP BY CustomerID
+)
+SELECT 
+    CustomerID,
+    MediaFreteCliente
+FROM ClientesFrete, MediaFrete
+WHERE MediaFreteCliente > MediaFrete;
+```
+
+---
+
+### **8. Soma acumulada do valor de vendas por funcionário**
+```sql
+WITH VendasPorFuncionario AS (
+    SELECT 
+        o.EmployeeID,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM [Order Details] od
+    JOIN Orders o ON od.OrderID = o.OrderID
+    GROUP BY o.EmployeeID
+)
+SELECT 
+    EmployeeID,
+    TotalVendas,
+    SUM(TotalVendas) OVER (ORDER BY EmployeeID) AS SomaAcumulada
+FROM VendasPorFuncionario;
+```
+
+---
+
+### **9. Fornecedores com produtos vendidos acima de um valor específico**
+```sql
+WITH VendasPorFornecedor AS (
+    SELECT 
+        s.SupplierID,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM [Order Details] od
+    JOIN Products p ON od.ProductID = p.ProductID
+    JOIN Suppliers s ON p.SupplierID = s.SupplierID
+    GROUP BY s.SupplierID
+)
+SELECT 
+    SupplierID,
+    TotalVendas
+FROM VendasPorFornecedor
+WHERE TotalVendas > 10000;
+```
+
+---
+
+### **10. Os 10 produtos mais vendidos (quantidade total)**
+```sql
+WITH QuantidadeVendida AS (
+    SELECT 
+        p.ProductID,
+        p.ProductName,
+        SUM(od.Quantity) AS TotalQuantidade
+    FROM [Order Details] od
+    JOIN Products p ON od.ProductID = p.ProductID
+    GROUP BY p.ProductID, p.ProductName
+)
+SELECT TOP 10
+    ProductID,
+    ProductName,
+    TotalQuantidade
+FROM QuantidadeVendida
+ORDER BY TotalQuantidade DESC;
+```
+
+---
+
+### **11. Use uma CTE recursiva para listar a hierarquia de categorias e subcategorias**
+Embora o banco Northwind não tenha subcategorias reais, você pode simular uma hierarquia fictícia com base nas categorias existentes.
+
+```sql
+WITH HierarquiaCategorias AS (
+    SELECT 
+        CategoryID,
+        CategoryName,
+        CAST(CategoryName AS NVARCHAR(MAX)) AS Caminho,
+        1 AS Nivel
+    FROM Categories
+    WHERE ParentCategoryID IS NULL -- Exemplo fictício: subcategoria de categoria pai
+    
+    UNION ALL
+    
+    SELECT 
+        c.CategoryID,
+        c.CategoryName,
+        CAST(h.Caminho + ' -> ' + c.CategoryName AS NVARCHAR(MAX)) AS Caminho,
+        Nivel + 1
+    FROM Categories c
+    JOIN HierarquiaCategorias h ON c.ParentCategoryID = h.CategoryID
+)
+SELECT 
+    CategoryID,
+    CategoryName,
+    Caminho,
+    Nivel
+FROM HierarquiaCategorias
+ORDER BY Caminho;
+```
+
+---
+
+### **12. Use uma CTE recursiva para calcular o número de níveis na hierarquia de vendas por região**
+O banco Northwind não possui hierarquias explícitas em regiões, mas podemos criar uma recursão hipotética para ilustrar níveis de agrupamento.
+
+```sql
+WITH HierarquiaRegioes AS (
+    SELECT 
+        RegionID,
+        RegionDescription AS NomeRegiao,
+        CAST(RegionDescription AS NVARCHAR(MAX)) AS Caminho,
+        1 AS Nivel
+    FROM Region
+    WHERE ParentRegionID IS NULL -- Exemplo fictício
+    
+    UNION ALL
+    
+    SELECT 
+        r.RegionID,
+        r.RegionDescription,
+        CAST(h.Caminho + ' -> ' + r.RegionDescription AS NVARCHAR(MAX)) AS Caminho,
+        h.Nivel + 1
+    FROM Region r
+    JOIN HierarquiaRegioes h ON r.ParentRegionID = h.RegionID
+)
+SELECT 
+    RegionID,
+    NomeRegiao,
+    Caminho,
+    Nivel
+FROM HierarquiaRegioes
+ORDER BY Caminho;
+```
+
+---
+
+### **13. Crie uma CTE recursiva para identificar os fornecedores associados a cada categoria e subcategoria**
+```sql
+WITH HierarquiaFornecedores AS (
+    SELECT 
+        c.CategoryID,
+        c.CategoryName,
+        p.ProductID,
+        s.SupplierID,
+        s.CompanyName AS NomeFornecedor,
+        1 AS Nivel
+    FROM Categories c
+    JOIN Products p ON c.CategoryID = p.CategoryID
+    JOIN Suppliers s ON p.SupplierID = s.SupplierID
+    
+    UNION ALL
+    
+    SELECT 
+        h.CategoryID,
+        h.CategoryName,
+        h.ProductID,
+        h.SupplierID,
+        h.NomeFornecedor,
+        Nivel + 1
+    FROM HierarquiaFornecedores h
+    JOIN Categories c ON c.ParentCategoryID = h.CategoryID -- Exemplo fictício
+)
+SELECT DISTINCT 
+    CategoryID,
+    CategoryName,
+    SupplierID,
+    NomeFornecedor,
+    Nivel
+FROM HierarquiaFornecedores
+ORDER BY CategoryID, Nivel;
+```
+
+---
+
+### **14. CTE recursiva para calcular o total acumulado de vendas por ano, começando de 1996**
+```sql
+WITH VendasAno AS (
+    SELECT 
+        YEAR(OrderDate) AS Ano,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    WHERE YEAR(OrderDate) >= 1996
+    GROUP BY YEAR(OrderDate)
+)
+, Acumulado AS (
+    SELECT 
+        Ano,
+        TotalVendas,
+        TotalVendas AS Acumulado
+    FROM VendasAno
+    WHERE Ano = 1996
+    
+    UNION ALL
+    
+    SELECT 
+        v.Ano,
+        v.TotalVendas,
+        a.Acumulado + v.TotalVendas AS Acumulado
+    FROM VendasAno v
+    JOIN Acumulado a ON v.Ano = a.Ano + 1
+)
+SELECT 
+    Ano,
+    TotalVendas,
+    Acumulado
+FROM Acumulado
+ORDER BY Ano;
+```
+
+---
+
+### **15. CTE recursiva para calcular o total de produtos vendidos por região e sub-região**
+```sql
+WITH ProdutosRegiao AS (
+    SELECT 
+        r.RegionID,
+        r.RegionDescription AS Regiao,
+        COUNT(DISTINCT p.ProductID) AS TotalProdutos,
+        1 AS Nivel
+    FROM Region r
+    JOIN Territories t ON r.RegionID = t.RegionID
+    JOIN EmployeeTerritories et ON t.TerritoryID = et.TerritoryID
+    JOIN Orders o ON o.EmployeeID = et.EmployeeID
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    JOIN Products p ON od.ProductID = p.ProductID
+    GROUP BY r.RegionID, r.RegionDescription
+    
+    UNION ALL
+    
+    SELECT 
+        r.RegionID,
+        r.RegionDescription,
+        pr.TotalProdutos,
+        pr.Nivel + 1
+    FROM ProdutosRegiao pr
+    JOIN Region r ON r.ParentRegionID = pr.RegionID -- Exemplo fictício
+)
+SELECT 
+    Regiao,
+    TotalProdutos,
+    Nivel
+FROM ProdutosRegiao
+ORDER BY Nivel, Regiao;
+```
+
+---
+
+### **16. CTE recursiva para identificar todos os clientes com pedidos de um produto específico**
+```sql
+WITH ClientesProduto AS (
+    SELECT 
+        c.CustomerID,
+        c.CompanyName,
+        1 AS Nivel
+    FROM Customers c
+    JOIN Orders o ON c.CustomerID = o.CustomerID
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    WHERE od.ProductID = 1 -- Produto específico (exemplo)
+    
+    UNION ALL
+    
+    SELECT 
+        cp.CustomerID,
+        cp.CompanyName,
+        cp.Nivel + 1
+    FROM ClientesProduto cp
+    JOIN Orders o ON cp.CustomerID = o.CustomerID
+)
+SELECT DISTINCT 
+    CustomerID,
+    CompanyName,
+    Nivel
+FROM ClientesProduto;
+```
+
+---
+
+### **17. CTE recursiva para calcular o total de produtos vendidos por funcionário**
+```sql
+WITH ProdutosFuncionario AS (
+    SELECT 
+        o.EmployeeID,
+        SUM(od.Quantity) AS TotalProdutos,
+        1 AS Nivel
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY o.EmployeeID
+    
+    UNION ALL
+    
+    SELECT 
+        pf.EmployeeID,
+        pf.TotalProdutos,
+        pf.Nivel + 1
+    FROM ProdutosFuncionario pf
+)
+SELECT 
+    EmployeeID,
+    TotalProdutos,
+    Nivel
+FROM ProdutosFuncionario
+ORDER BY TotalProdutos DESC;
+```
+
+---
+
+### **18. CTE recursiva para listar a hierarquia de produtos com base em categorias e subcategorias**
+```sql
+WITH HierarquiaProdutos AS (
+    SELECT 
+        c.CategoryID,
+        c.CategoryName,
+        p.ProductID,
+        p.ProductName,
+        1 AS Nivel
+    FROM Categories c
+    JOIN Products p ON c.CategoryID = p.CategoryID
+    
+    UNION ALL
+    
+    SELECT 
+        hp.CategoryID,
+        hp.CategoryName,
+        hp.ProductID,
+        hp.ProductName,
+        hp.Nivel + 1
+    FROM HierarquiaProdutos hp
+)
+SELECT 
+    CategoryID,
+    CategoryName,
+    ProductID,
+    ProductName,
+    Nivel
+FROM HierarquiaProdutos;
+```
+
+---
+
+### **19. CTE recursiva para calcular o total acumulado de vendas de cada fornecedor**
+```sql
+WITH VendasFornecedor AS (
+    SELECT 
+        s.SupplierID,
+        s.CompanyName,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas,
+        1 AS Nivel
+    FROM Suppliers s
+    JOIN Products p ON s.SupplierID = p.SupplierID
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    GROUP BY s.SupplierID, s.CompanyName
+)
+SELECT 
+    SupplierID,
+    CompanyName,
+    TotalVendas,
+    Nivel
+FROM VendasFornecedor
+ORDER BY TotalVendas DESC;
+```
+
+---
+
+### **20. CTE recursiva para hierarquia de vendas, do maior pedido ao menor**
+```sql
+WITH HierarquiaPedidos AS (
+    SELECT 
+        OrderID,
+        Freight AS TotalVendas,
+        1 AS Nivel
+    FROM Orders
+    
+    UNION ALL
+    
+    SELECT 
+        hp.OrderID,
+        hp.TotalVendas,
+        hp.Nivel + 1
+    FROM HierarquiaPedidos hp
+)
+SELECT 
+    OrderID,
+    TotalVendas,
+    Nivel
+FROM HierarquiaPedidos
+ORDER BY TotalVendas DESC;
+```
+
+---
+
+### **21. CTE para calcular a média de vendas por ano e listar os anos com valores acima da média geral**
+```sql
+WITH VendasAnuais AS (
+    SELECT 
+        YEAR(OrderDate) AS Ano,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY YEAR(OrderDate)
+),
+MediaGeral AS (
+    SELECT 
+        AVG(TotalVendas) AS MediaVendas
+    FROM VendasAnuais
+)
+SELECT 
+    v.Ano,
+    v.TotalVendas
+FROM VendasAnuais v, MediaGeral m
+WHERE v.TotalVendas > m.MediaVendas
+ORDER BY v.Ano;
+```
+
+---
+
+### **22. CTE para listar clientes com o número de pedidos superior à média de pedidos por cliente**
+```sql
+WITH PedidosPorCliente AS (
+    SELECT 
+        CustomerID,
+        COUNT(OrderID) AS TotalPedidos
+    FROM Orders
+    GROUP BY CustomerID
+),
+MediaPedidos AS (
+    SELECT 
+        AVG(TotalPedidos) AS Media
+    FROM PedidosPorCliente
+)
+SELECT 
+    p.CustomerID,
+    p.TotalPedidos
+FROM PedidosPorCliente p, MediaPedidos m
+WHERE p.TotalPedidos > m.Media
+ORDER BY p.TotalPedidos DESC;
+```
+
+---
+
+### **23. CTE para calcular o frete acumulado por região**
+```sql
+WITH FretePorRegiao AS (
+    SELECT 
+        ShipRegion,
+        SUM(Freight) AS TotalFrete
+    FROM Orders
+    GROUP BY ShipRegion
+),
+FreteAcumulado AS (
+    SELECT 
+        ShipRegion,
+        TotalFrete,
+        SUM(TotalFrete) OVER (ORDER BY ShipRegion) AS FreteAcumulado
+    FROM FretePorRegiao
+)
+SELECT 
+    ShipRegion,
+    TotalFrete,
+    FreteAcumulado
+FROM FreteAcumulado
+ORDER BY FreteAcumulado DESC;
+```
+
+---
+
+### **24. CTE para listar os 5 funcionários com mais vendas, calculando a soma acumulada**
+```sql
+WITH VendasFuncionario AS (
+    SELECT 
+        e.EmployeeID,
+        e.FirstName + ' ' + e.LastName AS NomeFuncionario,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM Employees e
+    JOIN Orders o ON e.EmployeeID = o.EmployeeID
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY e.EmployeeID, e.FirstName, e.LastName
+),
+Acumulado AS (
+    SELECT 
+        EmployeeID,
+        NomeFuncionario,
+        TotalVendas,
+        SUM(TotalVendas) OVER (ORDER BY TotalVendas DESC) AS SomaAcumulada
+    FROM VendasFuncionario
+)
+SELECT TOP 5 
+    EmployeeID,
+    NomeFuncionario,
+    TotalVendas,
+    SomaAcumulada
+FROM Acumulado;
+```
+
+---
+
+### **25. CTE para calcular o valor total de vendas por país**
+```sql
+WITH VendasPorPais AS (
+    SELECT 
+        ShipCountry,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY ShipCountry
+)
+SELECT 
+    ShipCountry,
+    TotalVendas
+FROM VendasPorPais
+ORDER BY TotalVendas DESC;
+```
+
+---
+
+### **26. CTE para calcular o total de vendas por trimestre**
+```sql
+WITH VendasTrimestrais AS (
+    SELECT 
+        DATEPART(YEAR, OrderDate) AS Ano,
+        DATEPART(QUARTER, OrderDate) AS Trimestre,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY DATEPART(YEAR, OrderDate), DATEPART(QUARTER, OrderDate)
+)
+SELECT 
+    Ano,
+    Trimestre,
+    TotalVendas
+FROM VendasTrimestrais
+ORDER BY Ano, Trimestre;
+```
+
+---
+
+### **27. CTE para listar os produtos que tiveram aumento no número de pedidos ano a ano**
+```sql
+WITH PedidosPorProduto AS (
+    SELECT 
+        p.ProductID,
+        p.ProductName,
+        YEAR(o.OrderDate) AS Ano,
+        COUNT(o.OrderID) AS TotalPedidos
+    FROM Products p
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    JOIN Orders o ON od.OrderID = o.OrderID
+    GROUP BY p.ProductID, p.ProductName, YEAR(o.OrderDate)
+),
+CrescimentoAnoAano AS (
+    SELECT 
+        p1.ProductID,
+        p1.ProductName,
+        p1.Ano AS AnoAtual,
+        p2.Ano AS AnoAnterior,
+        p1.TotalPedidos - p2.TotalPedidos AS Crescimento
+    FROM PedidosPorProduto p1
+    JOIN PedidosPorProduto p2 ON p1.ProductID = p2.ProductID AND p1.Ano = p2.Ano + 1
+)
+SELECT 
+    ProductID,
+    ProductName,
+    AnoAtual,
+    Crescimento
+FROM CrescimentoAnoAano
+WHERE Crescimento > 0;
+```
+
+---
+
+### **28. CTE para calcular o lucro total por categoria**
+```sql
+WITH LucroPorCategoria AS (
+    SELECT 
+        c.CategoryID,
+        c.CategoryName,
+        SUM((od.Quantity * od.UnitPrice) - (od.Quantity * od.UnitPrice * od.Discount)) AS LucroTotal
+    FROM Categories c
+    JOIN Products p ON c.CategoryID = p.CategoryID
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    GROUP BY c.CategoryID, c.CategoryName
+)
+SELECT 
+    CategoryID,
+    CategoryName,
+    LucroTotal
+FROM LucroPorCategoria
+ORDER BY LucroTotal DESC;
+```
+
+---
+
+### **29. CTE para identificar os produtos com vendas acumuladas maiores que 1 milhão**
+```sql
+WITH VendasProduto AS (
+    SELECT 
+        p.ProductID,
+        p.ProductName,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM Products p
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    GROUP BY p.ProductID, p.ProductName
+),
+Acumulado AS (
+    SELECT 
+        ProductID,
+        ProductName,
+        TotalVendas,
+        SUM(TotalVendas) OVER (ORDER BY TotalVendas DESC) AS VendasAcumuladas
+    FROM VendasProduto
+)
+SELECT 
+    ProductID,
+    ProductName,
+    TotalVendas,
+    VendasAcumuladas
+FROM Acumulado
+WHERE VendasAcumuladas > 1000000;
+```
+
+---
+
+### **30. CTE para calcular o desconto total concedido por cliente**
+```sql
+WITH DescontoPorCliente AS (
+    SELECT 
+        o.CustomerID,
+        SUM(od.Quantity * od.UnitPrice * od.Discount) AS TotalDesconto
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY o.CustomerID
+)
+SELECT 
+    CustomerID,
+    TotalDesconto
+FROM DescontoPorCliente
+ORDER BY TotalDesconto DESC;
+```
+
+---
+
+### **31. CTE para listar os 10 produtos mais vendidos em cada ano**
+```sql
+WITH VendasAnuaisPorProduto AS (
+    SELECT 
+        YEAR(o.OrderDate) AS Ano,
+        p.ProductID,
+        p.ProductName,
+        SUM(od.Quantity) AS TotalVendido
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    JOIN Products p ON od.ProductID = p.ProductID
+    GROUP BY YEAR(o.OrderDate), p.ProductID, p.ProductName
+),
+Ranking AS (
+    SELECT 
+        Ano,
+        ProductID,
+        ProductName,
+        TotalVendido,
+        ROW_NUMBER() OVER (PARTITION BY Ano ORDER BY TotalVendido DESC) AS Posicao
+    FROM VendasAnuaisPorProduto
+)
+SELECT 
+    Ano,
+    ProductID,
+    ProductName,
+    TotalVendido,
+    Posicao
+FROM Ranking
+WHERE Posicao <= 10
+ORDER BY Ano, Posicao;
+```
+
+---
+
+### **32. CTE para calcular o total de vendas acumulado de cada funcionário**
+```sql
+WITH VendasFuncionario AS (
+    SELECT 
+        e.EmployeeID,
+        e.FirstName + ' ' + e.LastName AS NomeFuncionario,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM Employees e
+    JOIN Orders o ON e.EmployeeID = o.EmployeeID
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY e.EmployeeID, e.FirstName, e.LastName
+),
+Acumulado AS (
+    SELECT 
+        EmployeeID,
+        NomeFuncionario,
+        TotalVendas,
+        SUM(TotalVendas) OVER (ORDER BY TotalVendas DESC) AS VendasAcumuladas
+    FROM VendasFuncionario
+)
+SELECT 
+    EmployeeID,
+    NomeFuncionario,
+    TotalVendas,
+    VendasAcumuladas
+FROM Acumulado
+ORDER BY VendasAcumuladas DESC;
+```
+
+---
+
+### **33. CTE para listar o trimestre com o maior número de pedidos**
+```sql
+WITH PedidosPorTrimestre AS (
+    SELECT 
+        DATEPART(YEAR, OrderDate) AS Ano,
+        DATEPART(QUARTER, OrderDate) AS Trimestre,
+        COUNT(OrderID) AS TotalPedidos
+    FROM Orders
+    GROUP BY DATEPART(YEAR, OrderDate), DATEPART(QUARTER, OrderDate)
+),
+MaiorTrimestre AS (
+    SELECT 
+        Ano,
+        Trimestre,
+        TotalPedidos,
+        RANK() OVER (ORDER BY TotalPedidos DESC) AS Ranking
+    FROM PedidosPorTrimestre
+)
+SELECT 
+    Ano,
+    Trimestre,
+    TotalPedidos
+FROM MaiorTrimestre
+WHERE Ranking = 1;
+```
+
+---
+
+### **34. CTE para calcular o desconto médio concedido por categoria**
+```sql
+WITH DescontoPorCategoria AS (
+    SELECT 
+        c.CategoryID,
+        c.CategoryName,
+        AVG(od.Discount) AS DescontoMedio
+    FROM Categories c
+    JOIN Products p ON c.CategoryID = p.CategoryID
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    GROUP BY c.CategoryID, c.CategoryName
+)
+SELECT 
+    CategoryID,
+    CategoryName,
+    DescontoMedio
+FROM DescontoPorCategoria
+ORDER BY DescontoMedio DESC;
+```
+
+---
+
+### **35. CTE para listar os clientes que fizeram mais de um pedido em um mesmo dia**
+```sql
+WITH PedidosClientes AS (
+    SELECT 
+        CustomerID,
+        OrderDate,
+        COUNT(OrderID) AS TotalPedidos
+    FROM Orders
+    GROUP BY CustomerID, OrderDate
+)
+SELECT 
+    CustomerID,
+    OrderDate,
+    TotalPedidos
+FROM PedidosClientes
+WHERE TotalPedidos > 1
+ORDER BY CustomerID, OrderDate;
+```
+
+---
+
+### **36. CTE para calcular a média de frete por país**
+```sql
+WITH FretePorPais AS (
+    SELECT 
+        ShipCountry,
+        AVG(Freight) AS MediaFrete
+    FROM Orders
+    GROUP BY ShipCountry
+)
+SELECT 
+    ShipCountry,
+    MediaFrete
+FROM FretePorPais
+ORDER BY MediaFrete DESC;
+```
+
+---
+
+### **37. CTE para listar os 5 produtos mais vendidos por categoria**
+```sql
+WITH VendasCategoria AS (
+    SELECT 
+        c.CategoryID,
+        c.CategoryName,
+        p.ProductID,
+        p.ProductName,
+        SUM(od.Quantity) AS TotalVendido
+    FROM Categories c
+    JOIN Products p ON c.CategoryID = p.CategoryID
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    GROUP BY c.CategoryID, c.CategoryName, p.ProductID, p.ProductName
+),
+Ranking AS (
+    SELECT 
+        CategoryID,
+        CategoryName,
+        ProductID,
+        ProductName,
+        TotalVendido,
+        ROW_NUMBER() OVER (PARTITION BY CategoryID ORDER BY TotalVendido DESC) AS Posicao
+    FROM VendasCategoria
+)
+SELECT 
+    CategoryID,
+    CategoryName,
+    ProductID,
+    ProductName,
+    TotalVendido
+FROM Ranking
+WHERE Posicao <= 5
+ORDER BY CategoryID, Posicao;
+```
+
+---
+
+### **38. CTE para calcular o total acumulado de vendas por cliente**
+```sql
+WITH VendasCliente AS (
+    SELECT 
+        c.CustomerID,
+        c.CompanyName,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM Customers c
+    JOIN Orders o ON c.CustomerID = o.CustomerID
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY c.CustomerID, c.CompanyName
+),
+Acumulado AS (
+    SELECT 
+        CustomerID,
+        CompanyName,
+        TotalVendas,
+        SUM(TotalVendas) OVER (ORDER BY TotalVendas DESC) AS VendasAcumuladas
+    FROM VendasCliente
+)
+SELECT 
+    CustomerID,
+    CompanyName,
+    TotalVendas,
+    VendasAcumuladas
+FROM Acumulado
+ORDER BY VendasAcumuladas DESC;
+```
+
+---
+
+### **39. CTE para identificar o ano com o maior número de vendas por produto**
+```sql
+WITH VendasPorProdutoAno AS (
+    SELECT 
+        p.ProductID,
+        p.ProductName,
+        YEAR(o.OrderDate) AS Ano,
+        SUM(od.Quantity) AS TotalVendas
+    FROM Products p
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    JOIN Orders o ON od.OrderID = o.OrderID
+    GROUP BY p.ProductID, p.ProductName, YEAR(o.OrderDate)
+),
+MaiorAno AS (
+    SELECT 
+        ProductID,
+        ProductName,
+        Ano,
+        TotalVendas,
+        RANK() OVER (PARTITION BY ProductID ORDER BY TotalVendas DESC) AS Ranking
+    FROM VendasPorProdutoAno
+)
+SELECT 
+    ProductID,
+    ProductName,
+    Ano,
+    TotalVendas
+FROM MaiorAno
+WHERE Ranking = 1;
+```
+
+---
+
+### **40. CTE para listar os produtos mais vendidos por região**
+```sql
+WITH VendasPorRegiao AS (
+    SELECT 
+        r.RegionID,
+        r.RegionDescription AS Regiao,
+        p.ProductID,
+        p.ProductName,
+        SUM(od.Quantity) AS TotalVendas
+    FROM Region r
+    JOIN Territories t ON r.RegionID = t.RegionID
+    JOIN EmployeeTerritories et ON t.TerritoryID = et.TerritoryID
+    JOIN Orders o ON o.EmployeeID = et.EmployeeID
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    JOIN Products p ON od.ProductID = p.ProductID
+    GROUP BY r.RegionID, r.RegionDescription, p.ProductID, p.ProductName
+),
+Ranking AS (
+    SELECT 
+        RegionID,
+        Regiao,
+        ProductID,
+        ProductName,
+        TotalVendas,
+        RANK() OVER (PARTITION BY RegionID ORDER BY TotalVendas DESC) AS Posicao
+    FROM VendasPorRegiao
+)
+SELECT 
+    RegionID,
+    Regiao,
+    ProductID,
+    ProductName,
+    TotalVendas
+FROM Ranking
+WHERE Posicao = 1
+ORDER BY RegionID;
+```
+
+---
+
+### **41. CTE para listar os 3 funcionários que mais atenderam pedidos em cada ano**
+```sql
+WITH PedidosPorFuncionario AS (
+    SELECT 
+        YEAR(o.OrderDate) AS Ano,
+        e.EmployeeID,
+        e.FirstName + ' ' + e.LastName AS NomeFuncionario,
+        COUNT(o.OrderID) AS TotalPedidos
+    FROM Employees e
+    JOIN Orders o ON e.EmployeeID = o.EmployeeID
+    GROUP BY YEAR(o.OrderDate), e.EmployeeID, e.FirstName, e.LastName
+),
+Ranking AS (
+    SELECT 
+        Ano,
+        EmployeeID,
+        NomeFuncionario,
+        TotalPedidos,
+        ROW_NUMBER() OVER (PARTITION BY Ano ORDER BY TotalPedidos DESC) AS Posicao
+    FROM PedidosPorFuncionario
+)
+SELECT 
+    Ano,
+    EmployeeID,
+    NomeFuncionario,
+    TotalPedidos
+FROM Ranking
+WHERE Posicao <= 3
+ORDER BY Ano, Posicao;
+```
+
+---
+
+### **42. CTE para calcular o total acumulado de frete por país**
+```sql
+WITH FretePorPais AS (
+    SELECT 
+        ShipCountry,
+        SUM(Freight) AS TotalFrete
+    FROM Orders
+    GROUP BY ShipCountry
+),
+FreteAcumulado AS (
+    SELECT 
+        ShipCountry,
+        TotalFrete,
+        SUM(TotalFrete) OVER (ORDER BY TotalFrete DESC) AS FreteAcumulado
+    FROM FretePorPais
+)
+SELECT 
+    ShipCountry,
+    TotalFrete,
+    FreteAcumulado
+FROM FreteAcumulado
+ORDER BY FreteAcumulado DESC;
+```
+
+---
+
+### **43. CTE para listar os 5 produtos com maior faturamento por cliente**
+```sql
+WITH FaturamentoPorProduto AS (
+    SELECT 
+        c.CustomerID,
+        c.CompanyName,
+        p.ProductID,
+        p.ProductName,
+        SUM(od.Quantity * od.UnitPrice) AS TotalFaturamento
+    FROM Customers c
+    JOIN Orders o ON c.CustomerID = o.CustomerID
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    JOIN Products p ON od.ProductID = p.ProductID
+    GROUP BY c.CustomerID, c.CompanyName, p.ProductID, p.ProductName
+),
+Ranking AS (
+    SELECT 
+        CustomerID,
+        CompanyName,
+        ProductID,
+        ProductName,
+        TotalFaturamento,
+        ROW_NUMBER() OVER (PARTITION BY CustomerID ORDER BY TotalFaturamento DESC) AS Posicao
+    FROM FaturamentoPorProduto
+)
+SELECT 
+    CustomerID,
+    CompanyName,
+    ProductID,
+    ProductName,
+    TotalFaturamento
+FROM Ranking
+WHERE Posicao <= 5
+ORDER BY CustomerID, Posicao;
+```
+
+---
+
+### **44. CTE para calcular o percentual de participação de cada categoria no total de vendas**
+```sql
+WITH VendasPorCategoria AS (
+    SELECT 
+        c.CategoryID,
+        c.CategoryName,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM Categories c
+    JOIN Products p ON c.CategoryID = p.CategoryID
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    GROUP BY c.CategoryID, c.CategoryName
+),
+TotalGeral AS (
+    SELECT 
+        SUM(TotalVendas) AS VendasTotais
+    FROM VendasPorCategoria
+)
+SELECT 
+    c.CategoryID,
+    c.CategoryName,
+    c.TotalVendas,
+    (c.TotalVendas / t.VendasTotais) * 100 AS PercentualParticipacao
+FROM VendasPorCategoria c
+CROSS JOIN TotalGeral t
+ORDER BY PercentualParticipacao DESC;
+```
+
+---
+
+### **45. CTE para identificar os produtos com vendas reduzidas ano a ano**
+```sql
+WITH VendasAnuaisProduto AS (
+    SELECT 
+        p.ProductID,
+        p.ProductName,
+        YEAR(o.OrderDate) AS Ano,
+        SUM(od.Quantity) AS TotalVendas
+    FROM Products p
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    JOIN Orders o ON od.OrderID = o.OrderID
+    GROUP BY p.ProductID, p.ProductName, YEAR(o.OrderDate)
+),
+ReducoesAnoAano AS (
+    SELECT 
+        v1.ProductID,
+        v1.ProductName,
+        v1.Ano AS AnoAtual,
+        v2.Ano AS AnoAnterior,
+        v1.TotalVendas - v2.TotalVendas AS Diferenca
+    FROM VendasAnuaisProduto v1
+    JOIN VendasAnuaisProduto v2 ON v1.ProductID = v2.ProductID AND v1.Ano = v2.Ano + 1
+)
+SELECT 
+    ProductID,
+    ProductName,
+    AnoAtual,
+    AnoAnterior,
+    Diferenca
+FROM ReducoesAnoAano
+WHERE Diferenca < 0
+ORDER BY ProductID, AnoAtual;
+```
+
+---
+
+### **46. CTE para listar os clientes que mais compraram em cada trimestre**
+```sql
+WITH VendasTrimestraisClientes AS (
+    SELECT 
+        DATEPART(YEAR, o.OrderDate) AS Ano,
+        DATEPART(QUARTER, o.OrderDate) AS Trimestre,
+        c.CustomerID,
+        c.CompanyName,
+        SUM(od.Quantity * od.UnitPrice) AS TotalCompras
+    FROM Customers c
+    JOIN Orders o ON c.CustomerID = o.CustomerID
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY DATEPART(YEAR, o.OrderDate), DATEPART(QUARTER, o.OrderDate), c.CustomerID, c.CompanyName
+),
+Ranking AS (
+    SELECT 
+        Ano,
+        Trimestre,
+        CustomerID,
+        CompanyName,
+        TotalCompras,
+        RANK() OVER (PARTITION BY Ano, Trimestre ORDER BY TotalCompras DESC) AS Posicao
+    FROM VendasTrimestraisClientes
+)
+SELECT 
+    Ano,
+    Trimestre,
+    CustomerID,
+    CompanyName,
+    TotalCompras
+FROM Ranking
+WHERE Posicao = 1
+ORDER BY Ano, Trimestre;
+```
+
+---
+
+### **47. CTE para calcular o total de vendas por funcionário em cada região**
+```sql
+WITH VendasFuncionarioRegiao AS (
+    SELECT 
+        r.RegionDescription AS Regiao,
+        e.EmployeeID,
+        e.FirstName + ' ' + e.LastName AS NomeFuncionario,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM Employees e
+    JOIN EmployeeTerritories et ON e.EmployeeID = et.EmployeeID
+    JOIN Territories t ON et.TerritoryID = t.TerritoryID
+    JOIN Region r ON t.RegionID = r.RegionID
+    JOIN Orders o ON e.EmployeeID = o.EmployeeID
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY r.RegionDescription, e.EmployeeID, e.FirstName, e.LastName
+)
+SELECT 
+    Regiao,
+    EmployeeID,
+    NomeFuncionario,
+    TotalVendas
+FROM VendasFuncionarioRegiao
+ORDER BY Regiao, TotalVendas DESC;
+```
+
+---
+
+### **48. CTE para calcular o crescimento percentual das vendas por produto ano a ano**
+```sql
+WITH VendasPorProdutoAno AS (
+    SELECT 
+        p.ProductID,
+        p.ProductName,
+        YEAR(o.OrderDate) AS Ano,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM Products p
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    JOIN Orders o ON od.OrderID = o.OrderID
+    GROUP BY p.ProductID, p.ProductName, YEAR(o.OrderDate)
+),
+Crescimento AS (
+    SELECT 
+        v1.ProductID,
+        v1.ProductName,
+        v1.Ano AS AnoAtual,
+        v2.Ano AS AnoAnterior,
+        v1.TotalVendas,
+        v2.TotalVendas AS VendasAnoAnterior,
+        ((v1.TotalVendas - v2.TotalVendas) * 100.0 / v2.TotalVendas) AS CrescimentoPercentual
+    FROM VendasPorProdutoAno v1
+    JOIN VendasPorProdutoAno v2 ON v1.ProductID = v2.ProductID AND v1.Ano = v2.Ano + 1
+)
+SELECT 
+    ProductID,
+    ProductName,
+    AnoAtual,
+    CrescimentoPercentual
+FROM Crescimento
+ORDER BY ProductID, AnoAtual;
+```
+
+---
+
+### **49. CTE para listar os territórios com o maior número de pedidos**
+```sql
+WITH PedidosPorTerritorio AS (
+    SELECT 
+        t.TerritoryID,
+        t.TerritoryDescription AS Territorio,
+        COUNT(o.OrderID) AS TotalPedidos
+    FROM Territories t
+    JOIN EmployeeTerritories et ON t.TerritoryID = et.TerritoryID
+    JOIN Orders o ON et.EmployeeID = o.EmployeeID
+    GROUP BY t.TerritoryID, t.TerritoryDescription
+)
+SELECT 
+    TerritoryID,
+    Territorio,
+    TotalPedidos
+FROM PedidosPorTerritorio
+ORDER BY TotalPedidos DESC;
+```
+
+---
+
+### **50. CTE para calcular a participação de cada produto no total de vendas**
+```sql
+WITH VendasProduto AS (
+    SELECT 
+        p.ProductID,
+        p.ProductName,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM Products p
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    GROUP BY p.ProductID, p.ProductName
+),
+TotalGeral AS (
+    SELECT 
+        SUM(TotalVendas) AS VendasTotais
+    FROM VendasProduto
+)
+SELECT 
+    p.ProductID,
+    p.ProductName,
+    p.TotalVendas,
+    (p.TotalVendas / t.VendasTotais) * 100 AS PercentualParticipacao
+FROM VendasProduto p
+CROSS JOIN TotalGeral t
+ORDER BY PercentualParticipacao DESC;
+```
+
+---
+
+### **51. CTE para calcular a média de vendas mensais por cliente**
+```sql
+WITH VendasMensaisCliente AS (
+    SELECT 
+        c.CustomerID,
+        c.CompanyName,
+        YEAR(o.OrderDate) AS Ano,
+        MONTH(o.OrderDate) AS Mes,
+        SUM(od.Quantity * od.UnitPrice) AS TotalMensal
+    FROM Customers c
+    JOIN Orders o ON c.CustomerID = o.CustomerID
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY c.CustomerID, c.CompanyName, YEAR(o.OrderDate), MONTH(o.OrderDate)
+)
+SELECT 
+    CustomerID,
+    CompanyName,
+    AVG(TotalMensal) AS MediaMensal
+FROM VendasMensaisCliente
+GROUP BY CustomerID, CompanyName
+ORDER BY MediaMensal DESC;
+```
+
+---
+
+### **52. CTE para listar os 3 clientes que mais gastaram em cada trimestre**
+```sql
+WITH VendasTrimestraisClientes AS (
+    SELECT 
+        DATEPART(YEAR, o.OrderDate) AS Ano,
+        DATEPART(QUARTER, o.OrderDate) AS Trimestre,
+        c.CustomerID,
+        c.CompanyName,
+        SUM(od.Quantity * od.UnitPrice) AS TotalGasto
+    FROM Customers c
+    JOIN Orders o ON c.CustomerID = o.CustomerID
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY DATEPART(YEAR, o.OrderDate), DATEPART(QUARTER, o.OrderDate), c.CustomerID, c.CompanyName
+),
+Ranking AS (
+    SELECT 
+        Ano,
+        Trimestre,
+        CustomerID,
+        CompanyName,
+        TotalGasto,
+        RANK() OVER (PARTITION BY Ano, Trimestre ORDER BY TotalGasto DESC) AS Posicao
+    FROM VendasTrimestraisClientes
+)
+SELECT 
+    Ano,
+    Trimestre,
+    CustomerID,
+    CompanyName,
+    TotalGasto
+FROM Ranking
+WHERE Posicao <= 3
+ORDER BY Ano, Trimestre, Posicao;
+```
+
+---
+
+### **53. CTE para calcular o percentual de pedidos atrasados por país**
+```sql
+WITH PedidosPorPais AS (
+    SELECT 
+        ShipCountry,
+        COUNT(OrderID) AS TotalPedidos,
+        SUM(CASE WHEN RequiredDate < ShippedDate THEN 1 ELSE 0 END) AS PedidosAtrasados
+    FROM Orders
+    GROUP BY ShipCountry
+)
+SELECT 
+    ShipCountry,
+    TotalPedidos,
+    PedidosAtrasados,
+    (PedidosAtrasados * 100.0 / TotalPedidos) AS PercentualAtrasados
+FROM PedidosPorPais
+ORDER BY PercentualAtrasados DESC;
+```
+
+---
+
+### **54. CTE para listar os produtos que nunca foram vendidos**
+```sql
+WITH ProdutosVendidos AS (
+    SELECT DISTINCT
+        p.ProductID,
+        p.ProductName
+    FROM Products p
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+),
+ProdutosNaoVendidos AS (
+    SELECT 
+        p.ProductID,
+        p.ProductName
+    FROM Products p
+    WHERE p.ProductID NOT IN (SELECT ProductID FROM ProdutosVendidos)
+)
+SELECT 
+    ProductID,
+    ProductName
+FROM ProdutosNaoVendidos
+ORDER BY ProductName;
+```
+
+---
+
+### **55. CTE para calcular o número de produtos vendidos por fornecedor**
+```sql
+WITH ProdutosPorFornecedor AS (
+    SELECT 
+        s.SupplierID,
+        s.CompanyName AS NomeFornecedor,
+        COUNT(DISTINCT p.ProductID) AS TotalProdutosVendidos
+    FROM Suppliers s
+    JOIN Products p ON s.SupplierID = p.SupplierID
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    GROUP BY s.SupplierID, s.CompanyName
+)
+SELECT 
+    SupplierID,
+    NomeFornecedor,
+    TotalProdutosVendidos
+FROM ProdutosPorFornecedor
+ORDER BY TotalProdutosVendidos DESC;
+```
+
+---
+
+### **56. CTE para calcular o faturamento anual de cada produto**
+```sql
+WITH FaturamentoProdutoAno AS (
+    SELECT 
+        p.ProductID,
+        p.ProductName,
+        YEAR(o.OrderDate) AS Ano,
+        SUM(od.Quantity * od.UnitPrice) AS TotalFaturamento
+    FROM Products p
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    JOIN Orders o ON od.OrderID = o.OrderID
+    GROUP BY p.ProductID, p.ProductName, YEAR(o.OrderDate)
+)
+SELECT 
+    ProductID,
+    ProductName,
+    Ano,
+    TotalFaturamento
+FROM FaturamentoProdutoAno
+ORDER BY Ano, TotalFaturamento DESC;
+```
+
+---
+
+### **57. CTE para listar os clientes que fizeram pedidos com valor médio acima de $100**
+```sql
+WITH PedidosCliente AS (
+    SELECT 
+        c.CustomerID,
+        c.CompanyName,
+        o.OrderID,
+        AVG(od.Quantity * od.UnitPrice) AS ValorMedio
+    FROM Customers c
+    JOIN Orders o ON c.CustomerID = o.CustomerID
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY c.CustomerID, c.CompanyName, o.OrderID
+)
+SELECT DISTINCT 
+    CustomerID,
+    CompanyName
+FROM PedidosCliente
+WHERE ValorMedio > 100
+ORDER BY CompanyName;
+```
+
+---
+
+### **58. CTE para calcular o tempo médio de entrega por país**
+```sql
+WITH TempoEntrega AS (
+    SELECT 
+        ShipCountry,
+        AVG(DATEDIFF(DAY, OrderDate, ShippedDate)) AS MediaDiasEntrega
+    FROM Orders
+    WHERE ShippedDate IS NOT NULL
+    GROUP BY ShipCountry
+)
+SELECT 
+    ShipCountry,
+    MediaDiasEntrega
+FROM TempoEntrega
+ORDER BY MediaDiasEntrega;
+```
+
+---
+
+### **59. CTE para listar os pedidos com o maior número de itens**
+```sql
+WITH ItensPorPedido AS (
+    SELECT 
+        o.OrderID,
+        COUNT(od.ProductID) AS TotalItens
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY o.OrderID
+)
+SELECT 
+    OrderID,
+    TotalItens
+FROM ItensPorPedido
+ORDER BY TotalItens DESC;
+```
+
+---
+
+### **60. CTE para calcular a contribuição de cada funcionário no total de vendas**
+```sql
+WITH VendasFuncionario AS (
+    SELECT 
+        e.EmployeeID,
+        e.FirstName + ' ' + e.LastName AS NomeFuncionario,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM Employees e
+    JOIN Orders o ON e.EmployeeID = o.EmployeeID
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    GROUP BY e.EmployeeID, e.FirstName, e.LastName
+),
+TotalGeral AS (
+    SELECT 
+        SUM(TotalVendas) AS VendasTotais
+    FROM VendasFuncionario
+)
+SELECT 
+    vf.EmployeeID,
+    vf.NomeFuncionario,
+    vf.TotalVendas,
+    (vf.TotalVendas * 100.0 / tg.VendasTotais) AS PercentualContribuicao
+FROM VendasFuncionario vf
+CROSS JOIN TotalGeral tg
+ORDER BY PercentualContribuicao DESC;
+```
+
+---

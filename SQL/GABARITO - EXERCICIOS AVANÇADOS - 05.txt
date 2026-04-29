@@ -1,0 +1,1460 @@
+### **01. Total acumulado de pedidos classificados por data**
+```sql
+SELECT 
+    OrderID,
+    CustomerID,
+    OrderDate,
+    SUM(Freight) OVER (ORDER BY OrderDate) AS TotalAcumulado
+FROM Orders;
+```
+
+---
+
+### **02. Média móvel dos valores dos pedidos nos últimos 3 pedidos para cada cliente**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    OrderDate,
+    AVG(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate ROWS 2 PRECEDING) AS MediaMovel
+FROM Orders;
+```
+
+---
+
+### **03. Produtos com a soma acumulada de vendas por categoria**
+```sql
+SELECT 
+    p.CategoryID,
+    p.ProductName,
+    SUM(od.Quantity * od.UnitPrice) OVER (PARTITION BY p.CategoryID ORDER BY od.OrderID) AS SomaAcumulada
+FROM Products p
+JOIN [Order Details] od ON p.ProductID = od.ProductID;
+```
+
+---
+
+### **04. Percentual de contribuição dos produtos em vendas dentro da categoria**
+```sql
+SELECT 
+    p.CategoryID,
+    p.ProductName,
+    SUM(od.Quantity * od.UnitPrice) AS TotalVendas,
+    SUM(SUM(od.Quantity * od.UnitPrice)) OVER (PARTITION BY p.CategoryID) AS TotalCategoria,
+    SUM(od.Quantity * od.UnitPrice) * 100.0 / SUM(SUM(od.Quantity * od.UnitPrice)) OVER (PARTITION BY p.CategoryID) AS PercentualContribuicao
+FROM Products p
+JOIN [Order Details] od ON p.ProductID = od.ProductID
+GROUP BY p.CategoryID, p.ProductName;
+```
+
+---
+
+### **05. Número de pedidos realizados por cliente**
+```sql
+SELECT 
+    CustomerID,
+    COUNT(OrderID) OVER (PARTITION BY CustomerID) AS TotalPedidos
+FROM Orders;
+```
+
+---
+
+### **06. Data do primeiro pedido de cada cliente**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    OrderDate,
+    MIN(OrderDate) OVER (PARTITION BY CustomerID) AS PrimeiroPedido
+FROM Orders;
+```
+
+---
+
+### **07. Valor médio dos pedidos por cliente**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    AVG(Freight) OVER (PARTITION BY CustomerID) AS MediaValorPedidos
+FROM Orders;
+```
+
+---
+
+### **08. Diferença entre o valor de um pedido e o valor médio dos pedidos do cliente**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    Freight AS ValorPedido,
+    AVG(Freight) OVER (PARTITION BY CustomerID) AS MediaValorPedidos,
+    Freight - AVG(Freight) OVER (PARTITION BY CustomerID) AS Diferenca
+FROM Orders;
+```
+
+---
+
+### **09. Ranking de vendas dos produtos dentro de cada categoria**
+```sql
+SELECT 
+    p.CategoryID,
+    p.ProductName,
+    RANK() OVER (PARTITION BY p.CategoryID ORDER BY SUM(od.Quantity * od.UnitPrice) DESC) AS Ranking
+FROM Products p
+JOIN [Order Details] od ON p.ProductID = od.ProductID
+GROUP BY p.CategoryID, p.ProductName;
+```
+
+---
+
+### **10. Total acumulado diário de pedidos para cada cliente**
+```sql
+SELECT 
+    CustomerID,
+    OrderDate,
+    SUM(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS TotalAcumuladoDiario
+FROM Orders;
+```
+
+---
+
+### **11. Produtos mais vendidos em cada categoria**
+```sql
+SELECT 
+    p.CategoryID,
+    p.ProductName,
+    DENSE_RANK() OVER (PARTITION BY p.CategoryID ORDER BY SUM(od.Quantity) DESC) AS Ranking
+FROM Products p
+JOIN [Order Details] od ON p.ProductID = od.ProductID
+GROUP BY p.CategoryID, p.ProductName;
+```
+
+---
+
+### **12. Diferença entre o maior e o menor valor de pedido por cliente**
+```sql
+SELECT 
+    CustomerID,
+    MAX(Freight) OVER (PARTITION BY CustomerID) - MIN(Freight) OVER (PARTITION BY CustomerID) AS Diferenca
+FROM Orders;
+```
+
+---
+
+### **13. Média acumulada de pedidos por cliente ordenados por data**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    AVG(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS MediaAcumulada
+FROM Orders;
+```
+
+---
+
+### **14. Soma acumulada de vendas por região para cada funcionário**
+```sql
+SELECT 
+    RegionID,
+    EmployeeID,
+    SUM(Freight) OVER (PARTITION BY RegionID ORDER BY EmployeeID) AS SomaAcumulada
+FROM Orders;
+```
+
+---
+
+### **15. Classificação reversa por valor de pedido**
+```sql
+SELECT 
+    OrderID,
+    Freight AS ValorPedido,
+    ROW_NUMBER() OVER (ORDER BY Freight DESC) AS ClassificacaoReversa
+FROM Orders;
+```
+
+---
+
+### **16. Os 3 produtos mais vendidos em cada categoria**
+```sql
+WITH Ranking AS (
+    SELECT 
+        p.CategoryID,
+        p.ProductName,
+        RANK() OVER (PARTITION BY p.CategoryID ORDER BY SUM(od.Quantity) DESC) AS Ranking
+    FROM Products p
+    JOIN [Order Details] od ON p.ProductID = od.ProductID
+    GROUP BY p.CategoryID, p.ProductName
+)
+SELECT * 
+FROM Ranking
+WHERE Ranking <= 3;
+```
+
+---
+
+### **17. Diferença percentual entre vendas de meses consecutivos**
+```sql
+SELECT 
+    CustomerID,
+    OrderDate,
+    Freight,
+    LAG(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS PedidoAnterior,
+    (Freight - LAG(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate)) * 100.0 / LAG(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS DiferencaPercentual
+FROM Orders;
+```
+
+---
+
+### **18. Ranking de pedidos feitos por cliente em cada ano**
+```sql
+SELECT 
+    CustomerID,
+    YEAR(OrderDate) AS Ano,
+    OrderID,
+    RANK() OVER (PARTITION BY CustomerID, YEAR(OrderDate) ORDER BY OrderDate) AS RankingAnual
+FROM Orders;
+```
+
+---
+
+### **19. Total acumulado de vendas por ano para cada funcionário**
+```sql
+SELECT 
+    EmployeeID,
+    YEAR(OrderDate) AS Ano,
+    SUM(Freight) OVER (PARTITION BY EmployeeID, YEAR(OrderDate) ORDER BY OrderDate) AS TotalAcumuladoAnual
+FROM Orders;
+```
+
+---
+
+### **20. Média móvel de vendas dos últimos 5 meses por produto**
+```sql
+SELECT 
+    p.ProductID,
+    p.ProductName,
+    od.OrderID,
+    SUM(od.Quantity * od.UnitPrice) OVER (PARTITION BY p.ProductID ORDER BY o.OrderDate ROWS BETWEEN 4 PRECEDING AND CURRENT ROW) AS MediaMovel
+FROM Products p
+JOIN [Order Details] od ON p.ProductID = od.ProductID
+JOIN Orders o ON od.OrderID = o.OrderID;
+```
+
+---
+
+### **21. Identifique o cliente que fez o próximo pedido usando `LEAD()`**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    OrderDate,
+    LEAD(CustomerID) OVER (ORDER BY OrderDate) AS ProximoCliente
+FROM Orders;
+```
+
+---
+
+### **22. Diferença entre o valor de um pedido e o próximo pedido do mesmo cliente**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    Freight AS ValorAtual,
+    LEAD(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS ValorProximoPedido,
+    LEAD(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) - Freight AS Diferenca
+FROM Orders;
+```
+
+---
+
+### **23. Estoque atual e o estoque do mês anterior para cada produto usando `LAG()`**
+```sql
+SELECT 
+    ProductID,
+    ProductName,
+    QuantityPerUnit AS EstoqueAtual,
+    LAG(QuantityPerUnit) OVER (ORDER BY ProductID) AS EstoqueMesAnterior
+FROM Products;
+```
+
+---
+
+### **24. Diferença entre o preço atual e o preço anterior de cada produto**
+```sql
+SELECT 
+    ProductID,
+    ProductName,
+    UnitPrice AS PrecoAtual,
+    LAG(UnitPrice) OVER (ORDER BY ProductID) AS PrecoAnterior,
+    UnitPrice - LAG(UnitPrice) OVER (ORDER BY ProductID) AS DiferencaPreco
+FROM Products;
+```
+
+---
+
+### **25. Próximo valor de pedido do mesmo cliente**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    Freight AS ValorAtual,
+    LEAD(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS ValorProximoPedido
+FROM Orders;
+```
+
+---
+
+### **26. Crescimento percentual do valor de vendas mês a mês**
+```sql
+SELECT 
+    YEAR(OrderDate) AS Ano,
+    MONTH(OrderDate) AS Mes,
+    SUM(Freight) AS TotalVendasMensal,
+    LAG(SUM(Freight)) OVER (ORDER BY YEAR(OrderDate), MONTH(OrderDate)) AS VendasMesAnterior,
+    (SUM(Freight) - LAG(SUM(Freight)) OVER (ORDER BY YEAR(OrderDate), MONTH(OrderDate))) * 100.0 / 
+    LAG(SUM(Freight)) OVER (ORDER BY YEAR(OrderDate), MONTH(OrderDate)) AS CrescimentoPercentual
+FROM Orders
+GROUP BY YEAR(OrderDate), MONTH(OrderDate);
+```
+
+---
+
+### **27. Valor do pedido anterior e a diferença para o pedido atual**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    Freight AS ValorAtual,
+    LAG(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS ValorAnterior,
+    Freight - LAG(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS Diferenca
+FROM Orders;
+```
+
+---
+
+### **28. Próxima data de envio programada para produtos**
+```sql
+SELECT 
+    ProductID,
+    OrderID,
+    RequiredDate AS DataEnvioAtual,
+    LEAD(RequiredDate) OVER (PARTITION BY ProductID ORDER BY RequiredDate) AS ProximaDataEnvio
+FROM [Order Details];
+```
+
+---
+
+### **29. Tempo médio entre os pedidos**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    OrderDate,
+    LAG(OrderDate) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS PedidoAnterior,
+    DATEDIFF(DAY, LAG(OrderDate) OVER (PARTITION BY CustomerID ORDER BY OrderDate), OrderDate) AS DiasEntrePedidos
+FROM Orders;
+```
+
+---
+
+### **30. Pedidos com valor maior que o pedido anterior**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    Freight AS ValorAtual,
+    LAG(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS ValorAnterior,
+    CASE 
+        WHEN Freight > LAG(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) THEN 'Maior'
+        ELSE 'Menor ou Igual'
+    END AS Comparacao
+FROM Orders;
+```
+
+---
+
+### **31. Média móvel de vendas nos últimos 12 meses**
+```sql
+SELECT 
+    YEAR(OrderDate) AS Ano,
+    MONTH(OrderDate) AS Mes,
+    AVG(Freight) OVER (ORDER BY YEAR(OrderDate), MONTH(OrderDate) ROWS BETWEEN 11 PRECEDING AND CURRENT ROW) AS MediaMovel12Meses
+FROM Orders;
+```
+
+---
+
+### **32. Total de vendas no trimestre atual e anterior para cada funcionário**
+```sql
+SELECT 
+    EmployeeID,
+    DATEPART(YEAR, OrderDate) AS Ano,
+    DATEPART(QUARTER, OrderDate) AS Trimestre,
+    SUM(Freight) OVER (PARTITION BY EmployeeID, DATEPART(YEAR, OrderDate), DATEPART(QUARTER, OrderDate)) AS TotalTrimestreAtual,
+    LAG(SUM(Freight)) OVER (PARTITION BY EmployeeID ORDER BY DATEPART(YEAR, OrderDate), DATEPART(QUARTER, OrderDate)) AS TotalTrimestreAnterior
+FROM Orders;
+```
+
+---
+
+### **33. Soma acumulada de pedidos em um intervalo de 30 dias**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    OrderDate,
+    SUM(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) AS SomaAcumulada30Dias
+FROM Orders;
+```
+
+---
+
+### **34. Primeiro e último pedido de cada cliente por ano**
+```sql
+SELECT 
+    CustomerID,
+    YEAR(OrderDate) AS Ano,
+    MIN(OrderDate) OVER (PARTITION BY CustomerID, YEAR(OrderDate)) AS PrimeiroPedido,
+    MAX(OrderDate) OVER (PARTITION BY CustomerID, YEAR(OrderDate)) AS UltimoPedido
+FROM Orders;
+```
+
+---
+
+### **35. Média de vendas por estação do ano**
+```sql
+SELECT 
+    ProductID,
+    ProductName,
+    CASE 
+        WHEN MONTH(OrderDate) IN (12, 1, 2) THEN 'Inverno'
+        WHEN MONTH(OrderDate) IN (3, 4, 5) THEN 'Primavera'
+        WHEN MONTH(OrderDate) IN (6, 7, 8) THEN 'Verão'
+        ELSE 'Outono'
+    END AS Estacao,
+    AVG(od.Quantity * od.UnitPrice) OVER (PARTITION BY ProductID, Estacao) AS MediaEstacao
+FROM [Order Details] od
+JOIN Orders o ON od.OrderID = o.OrderID
+JOIN Products p ON od.ProductID = p.ProductID;
+```
+
+---
+
+### **36. Total acumulado de vendas em um intervalo deslizante de 7 dias**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    OrderDate,
+    SUM(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS Total7Dias
+FROM Orders;
+```
+
+---
+
+### **37. Ranking de vendas semanais por cliente**
+```sql
+SELECT 
+    CustomerID,
+    DATEPART(WEEK, OrderDate) AS Semana,
+    RANK() OVER (PARTITION BY CustomerID, DATEPART(WEEK, OrderDate) ORDER BY SUM(Freight) DESC) AS RankingSemanal
+FROM Orders
+GROUP BY CustomerID, DATEPART(WEEK, OrderDate);
+```
+
+---
+
+### **38. Soma acumulada de vendas no trimestre atual**
+```sql
+SELECT 
+    CustomerID,
+    DATEPART(QUARTER, OrderDate) AS Trimestre,
+    SUM(Freight) OVER (PARTITION BY CustomerID, DATEPART(QUARTER, OrderDate) ORDER BY OrderDate) AS SomaTrimestral
+FROM Orders;
+```
+
+---
+
+### **39. Total de vendas por trimestre e diferença para o trimestre anterior**
+```sql
+SELECT 
+    DATEPART(YEAR, OrderDate) AS Ano,
+    DATEPART(QUARTER, OrderDate) AS Trimestre,
+    SUM(Freight) AS TotalTrimestre,
+    SUM(Freight) - LAG(SUM(Freight)) OVER (ORDER BY DATEPART(YEAR, OrderDate), DATEPART(QUARTER, OrderDate)) AS Diferenca
+FROM Orders
+GROUP BY DATEPART(YEAR, OrderDate), DATEPART(QUARTER, OrderDate);
+```
+
+---
+
+### **40. Total acumulado de vendas mensais**
+```sql
+SELECT 
+    CustomerID,
+    YEAR(OrderDate) AS Ano,
+    MONTH(OrderDate) AS Mes,
+    SUM(Freight) OVER (PARTITION BY CustomerID, YEAR(OrderDate), MONTH(OrderDate)) AS TotalMensalAcumulado
+FROM Orders;
+```
+
+---
+
+### **41. Classificação dos clientes com base no total de pedidos**
+```sql
+SELECT 
+    CustomerID,
+    COUNT(OrderID) AS TotalPedidos,
+    RANK() OVER (ORDER BY COUNT(OrderID) DESC) AS Classificacao
+FROM Orders
+GROUP BY CustomerID;
+```
+
+---
+
+### **42. Produtos mais vendidos em cada mês do ano**
+```sql
+SELECT 
+    MONTH(o.OrderDate) AS Mes,
+    p.ProductName,
+    SUM(od.Quantity) AS TotalVendas,
+    RANK() OVER (PARTITION BY MONTH(o.OrderDate) ORDER BY SUM(od.Quantity) DESC) AS Ranking
+FROM [Order Details] od
+JOIN Orders o ON od.OrderID = o.OrderID
+JOIN Products p ON od.ProductID = p.ProductID
+GROUP BY MONTH(o.OrderDate), p.ProductName;
+```
+
+---
+
+### **43. Porcentagem acumulada de vendas por produto**
+```sql
+SELECT 
+    p.ProductName,
+    SUM(od.Quantity * od.UnitPrice) AS TotalVendas,
+    SUM(SUM(od.Quantity * od.UnitPrice)) OVER (ORDER BY SUM(od.Quantity * od.UnitPrice) DESC) AS SomaAcumulada,
+    SUM(od.Quantity * od.UnitPrice) * 100.0 / SUM(SUM(od.Quantity * od.UnitPrice)) OVER () AS PercentualTotal
+FROM [Order Details] od
+JOIN Products p ON od.ProductID = p.ProductID
+GROUP BY p.ProductName;
+```
+
+---
+
+### **44. Média móvel de vendas dos últimos 6 pedidos por cliente**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    Freight AS ValorPedido,
+    AVG(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate ROWS BETWEEN 5 PRECEDING AND CURRENT ROW) AS MediaMovel6Pedidos
+FROM Orders;
+```
+
+---
+
+### **45. Ranking de vendas por funcionário dentro de cada ano**
+```sql
+SELECT 
+    EmployeeID,
+    YEAR(OrderDate) AS Ano,
+    SUM(Freight) AS TotalVendas,
+    RANK() OVER (PARTITION BY YEAR(OrderDate) ORDER BY SUM(Freight) DESC) AS Ranking
+FROM Orders
+GROUP BY EmployeeID, YEAR(OrderDate);
+```
+
+---
+
+### **46. Crescimento percentual de vendas em cada trimestre**
+```sql
+SELECT 
+    YEAR(OrderDate) AS Ano,
+    DATEPART(QUARTER, OrderDate) AS Trimestre,
+    SUM(Freight) AS TotalTrimestre,
+    LAG(SUM(Freight)) OVER (ORDER BY YEAR(OrderDate), DATEPART(QUARTER, OrderDate)) AS VendasTrimestreAnterior,
+    (SUM(Freight) - LAG(SUM(Freight)) OVER (ORDER BY YEAR(OrderDate), DATEPART(QUARTER, OrderDate))) * 100.0 / 
+    LAG(SUM(Freight)) OVER (ORDER BY YEAR(OrderDate), DATEPART(QUARTER, OrderDate)) AS CrescimentoPercentual
+FROM Orders
+GROUP BY YEAR(OrderDate), DATEPART(QUARTER, OrderDate);
+```
+
+---
+
+### **47. Ranking reverso de produtos por valor total de vendas**
+```sql
+SELECT 
+    p.ProductName,
+    SUM(od.Quantity * od.UnitPrice) AS TotalVendas,
+    RANK() OVER (ORDER BY SUM(od.Quantity * od.UnitPrice) ASC) AS RankingReverso
+FROM [Order Details] od
+JOIN Products p ON od.ProductID = p.ProductID
+GROUP BY p.ProductName;
+```
+
+---
+
+### **48. Diferença de vendas entre meses consecutivos**
+```sql
+SELECT 
+    YEAR(OrderDate) AS Ano,
+    MONTH(OrderDate) AS Mes,
+    SUM(Freight) AS TotalVendasMensal,
+    SUM(Freight) - LAG(SUM(Freight)) OVER (ORDER BY YEAR(OrderDate), MONTH(OrderDate)) AS Diferenca
+FROM Orders
+GROUP BY YEAR(OrderDate), MONTH(OrderDate);
+```
+
+---
+
+### **49. Produtos mais vendidos em cada região**
+```sql
+SELECT 
+    r.RegionDescription,
+    p.ProductName,
+    SUM(od.Quantity) AS TotalVendas,
+    RANK() OVER (PARTITION BY r.RegionDescription ORDER BY SUM(od.Quantity) DESC) AS Ranking
+FROM [Order Details] od
+JOIN Products p ON od.ProductID = p.ProductID
+JOIN Orders o ON od.OrderID = o.OrderID
+JOIN Employees e ON o.EmployeeID = e.EmployeeID
+JOIN Territories t ON e.EmployeeID = t.TerritoryID
+JOIN Region r ON t.RegionID = r.RegionID
+GROUP BY r.RegionDescription, p.ProductName;
+```
+
+---
+
+### **50. Total acumulado de vendas para cada cliente ordenado por data**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    OrderDate,
+    SUM(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS TotalAcumulado
+FROM Orders;
+```
+
+---
+
+### **51. Média de vendas por trimestre e diferença para o trimestre anterior**
+```sql
+SELECT 
+    DATEPART(YEAR, OrderDate) AS Ano,
+    DATEPART(QUARTER, OrderDate) AS Trimestre,
+    AVG(Freight) AS MediaTrimestral,
+    AVG(Freight) - LAG(AVG(Freight)) OVER (ORDER BY DATEPART(YEAR, OrderDate), DATEPART(QUARTER, OrderDate)) AS DiferencaMedia
+FROM Orders
+GROUP BY DATEPART(YEAR, OrderDate), DATEPART(QUARTER, OrderDate);
+```
+
+---
+
+### **52. Soma acumulada de vendas por categoria**
+```sql
+SELECT 
+    p.CategoryID,
+    c.CategoryName,
+    SUM(od.Quantity * od.UnitPrice) AS TotalVendas,
+    SUM(SUM(od.Quantity * od.UnitPrice)) OVER (PARTITION BY p.CategoryID ORDER BY p.CategoryID) AS SomaAcumulada
+FROM Products p
+JOIN Categories c ON p.CategoryID = c.CategoryID
+JOIN [Order Details] od ON p.ProductID = od.ProductID
+GROUP BY p.CategoryID, c.CategoryName;
+```
+
+---
+
+### **53. Ranking de vendas anuais por região**
+```sql
+SELECT 
+    r.RegionDescription,
+    YEAR(o.OrderDate) AS Ano,
+    SUM(o.Freight) AS TotalVendas,
+    RANK() OVER (PARTITION BY YEAR(o.OrderDate) ORDER BY SUM(o.Freight) DESC) AS Ranking
+FROM Orders o
+JOIN Employees e ON o.EmployeeID = e.EmployeeID
+JOIN Territories t ON e.EmployeeID = t.TerritoryID
+JOIN Region r ON t.RegionID = r.RegionID
+GROUP BY r.RegionDescription, YEAR(o.OrderDate);
+```
+
+---
+
+### **54. Diferença acumulada de vendas por cliente**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    SUM(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS TotalAcumulado,
+    SUM(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) - LAG(SUM(Freight)) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS DiferencaAcumulada
+FROM Orders;
+```
+
+---
+
+### **55. Pedidos com o maior valor em cada ano**
+```sql
+WITH PedidosAnuais AS (
+    SELECT 
+        YEAR(OrderDate) AS Ano,
+        OrderID,
+        Freight,
+        RANK() OVER (PARTITION BY YEAR(OrderDate) ORDER BY Freight DESC) AS Ranking
+    FROM Orders
+)
+SELECT * 
+FROM PedidosAnuais
+WHERE Ranking = 1;
+```
+
+---
+
+### **56. Produtos mais lucrativos por fornecedor**
+```sql
+SELECT 
+    s.CompanyName AS Fornecedor,
+    p.ProductName,
+    SUM(od.Quantity * od.UnitPrice) AS TotalLucro,
+    RANK() OVER (PARTITION BY s.CompanyName ORDER BY SUM(od.Quantity * od.UnitPrice) DESC) AS Ranking
+FROM [Order Details] od
+JOIN Products p ON od.ProductID = p.ProductID
+JOIN Suppliers s ON p.SupplierID = s.SupplierID
+GROUP BY s.CompanyName, p.ProductName;
+```
+
+---
+
+### **57. Diferença entre vendas de categorias consecutivas**
+```sql
+SELECT 
+    p.CategoryID,
+    c.CategoryName,
+    SUM(od.Quantity * od.UnitPrice) AS TotalVendas,
+    SUM(od.Quantity * od.UnitPrice) - LAG(SUM(od.Quantity * od.UnitPrice)) OVER (ORDER BY p.CategoryID) AS Diferenca
+FROM Products p
+JOIN Categories c ON p.CategoryID = c.CategoryID
+JOIN [Order Details] od ON p.ProductID = od.ProductID
+GROUP BY p.CategoryID, c.CategoryName;
+```
+
+---
+
+### **58. Média móvel de vendas dos últimos 10 pedidos**
+```sql
+SELECT 
+    OrderID,
+    OrderDate,
+    Freight AS ValorPedido,
+    AVG(Freight) OVER (ORDER BY OrderDate ROWS BETWEEN 9 PRECEDING AND CURRENT ROW) AS MediaMovel10Pedidos
+FROM Orders;
+```
+
+---
+
+### **59. Total acumulado de vendas semanais**
+```sql
+SELECT 
+    DATEPART(YEAR, OrderDate) AS Ano,
+    DATEPART(WEEK, OrderDate) AS Semana,
+    SUM(Freight) AS TotalVendas,
+    SUM(SUM(Freight)) OVER (ORDER BY DATEPART(YEAR, OrderDate), DATEPART(WEEK, OrderDate)) AS TotalAcumulado
+FROM Orders
+GROUP BY DATEPART(YEAR, OrderDate), DATEPART(WEEK, OrderDate);
+```
+
+---
+
+### **60. Ranking de categorias por total de vendas**
+```sql
+SELECT 
+    c.CategoryName,
+    SUM(od.Quantity * od.UnitPrice) AS TotalVendas,
+    RANK() OVER (ORDER BY SUM(od.Quantity * od.UnitPrice) DESC) AS Ranking
+FROM [Order Details] od
+JOIN Products p ON od.ProductID = p.ProductID
+JOIN Categories c ON p.CategoryID = c.CategoryID
+GROUP BY c.CategoryName;
+```
+
+---
+
+### **61. Soma acumulada do valor total de vendas por trimestre**
+```sql
+SELECT 
+    YEAR(OrderDate) AS Ano,
+    DATEPART(QUARTER, OrderDate) AS Trimestre,
+    SUM(Freight) AS TotalTrimestral,
+    SUM(SUM(Freight)) OVER (ORDER BY YEAR(OrderDate), DATEPART(QUARTER, OrderDate)) AS SomaAcumulada
+FROM Orders
+GROUP BY YEAR(OrderDate), DATEPART(QUARTER, OrderDate);
+```
+
+---
+
+### **62. Primeiro e último pedido de cada cliente no ano**
+```sql
+SELECT 
+    CustomerID,
+    YEAR(OrderDate) AS Ano,
+    MIN(OrderDate) AS PrimeiroPedido,
+    MAX(OrderDate) AS UltimoPedido
+FROM Orders
+GROUP BY CustomerID, YEAR(OrderDate);
+```
+
+---
+
+### **63. Diferença percentual entre os valores de pedidos consecutivos**
+```sql
+SELECT 
+    CustomerID,
+    OrderID,
+    Freight AS ValorAtual,
+    LAG(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS ValorAnterior,
+    (Freight - LAG(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate)) * 100.0 / 
+    LAG(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS DiferencaPercentual
+FROM Orders;
+```
+
+---
+
+### **64. Produtos que tiveram maior variação de vendas entre meses consecutivos**
+```sql
+SELECT 
+    ProductID,
+    MONTH(OrderDate) AS Mes,
+    SUM(Quantity) AS TotalVendas,
+    SUM(Quantity) - LAG(SUM(Quantity)) OVER (PARTITION BY ProductID ORDER BY MONTH(OrderDate)) AS Variacao
+FROM [Order Details] od
+JOIN Orders o ON od.OrderID = o.OrderID
+GROUP BY ProductID, MONTH(OrderDate);
+```
+
+---
+
+### **65. Ranking de funcionários por vendas acumuladas**
+```sql
+SELECT 
+    EmployeeID,
+    SUM(Freight) AS TotalVendas,
+    RANK() OVER (ORDER BY SUM(Freight) DESC) AS Ranking
+FROM Orders
+GROUP BY EmployeeID;
+```
+
+---
+
+### **66. Média móvel de vendas dos últimos 3 trimestres**
+```sql
+SELECT 
+    YEAR(OrderDate) AS Ano,
+    DATEPART(QUARTER, OrderDate) AS Trimestre,
+    SUM(Freight) AS TotalTrimestral,
+    AVG(SUM(Freight)) OVER (ORDER BY YEAR(OrderDate), DATEPART(QUARTER, OrderDate) ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS MediaMovel
+FROM Orders
+GROUP BY YEAR(OrderDate), DATEPART(QUARTER, OrderDate);
+```
+
+---
+
+### **67. Produto mais vendido em cada categoria**
+```sql
+WITH VendasPorProduto AS (
+    SELECT 
+        p.CategoryID,
+        c.CategoryName,
+        p.ProductName,
+        SUM(od.Quantity) AS TotalVendas,
+        RANK() OVER (PARTITION BY p.CategoryID ORDER BY SUM(od.Quantity) DESC) AS Ranking
+    FROM [Order Details] od
+    JOIN Products p ON od.ProductID = p.ProductID
+    JOIN Categories c ON p.CategoryID = c.CategoryID
+    GROUP BY p.CategoryID, c.CategoryName, p.ProductName
+)
+SELECT * 
+FROM VendasPorProduto
+WHERE Ranking = 1;
+```
+
+---
+
+### **68. Vendas acumuladas no trimestre para cada produto**
+```sql
+SELECT 
+    ProductID,
+    DATEPART(YEAR, OrderDate) AS Ano,
+    DATEPART(QUARTER, OrderDate) AS Trimestre,
+    SUM(Quantity) AS TotalVendasTrimestral,
+    SUM(SUM(Quantity)) OVER (PARTITION BY ProductID ORDER BY DATEPART(YEAR, OrderDate), DATEPART(QUARTER, OrderDate)) AS SomaAcumulada
+FROM [Order Details] od
+JOIN Orders o ON od.OrderID = o.OrderID
+GROUP BY ProductID, DATEPART(YEAR, OrderDate), DATEPART(QUARTER, OrderDate);
+```
+
+---
+
+### **69. Pedido mais recente e mais antigo de cada cliente**
+```sql
+SELECT 
+    CustomerID,
+    MAX(OrderDate) AS PedidoMaisRecente,
+    MIN(OrderDate) AS PedidoMaisAntigo
+FROM Orders
+GROUP BY CustomerID;
+```
+
+---
+
+### **70. Diferença entre vendas anuais consecutivas para cada funcionário**
+```sql
+SELECT 
+    EmployeeID,
+    YEAR(OrderDate) AS Ano,
+    SUM(Freight) AS TotalAnual,
+    SUM(Freight) - LAG(SUM(Freight)) OVER (PARTITION BY EmployeeID ORDER BY YEAR(OrderDate)) AS Diferenca
+FROM Orders
+GROUP BY EmployeeID, YEAR(OrderDate);
+```
+
+---
+
+### **71. Top 3 produtos mais vendidos em cada mês**
+```sql
+WITH RankingProdutos AS (
+    SELECT 
+        MONTH(o.OrderDate) AS Mes,
+        p.ProductName,
+        SUM(od.Quantity) AS TotalVendas,
+        RANK() OVER (PARTITION BY MONTH(o.OrderDate) ORDER BY SUM(od.Quantity) DESC) AS Ranking
+    FROM [Order Details] od
+    JOIN Orders o ON od.OrderID = o.OrderID
+    JOIN Products p ON od.ProductID = p.ProductID
+    GROUP BY MONTH(o.OrderDate), p.ProductName
+)
+SELECT * 
+FROM RankingProdutos
+WHERE Ranking <= 3;
+```
+
+---
+
+### **72. Soma acumulada de vendas por fornecedor**
+```sql
+SELECT 
+    s.SupplierID,
+    s.CompanyName AS Fornecedor,
+    SUM(od.Quantity * od.UnitPrice) AS TotalVendas,
+    SUM(SUM(od.Quantity * od.UnitPrice)) OVER (PARTITION BY s.SupplierID ORDER BY s.SupplierID) AS SomaAcumulada
+FROM [Order Details] od
+JOIN Products p ON od.ProductID = p.ProductID
+JOIN Suppliers s ON p.SupplierID = s.SupplierID
+GROUP BY s.SupplierID, s.CompanyName;
+```
+
+---
+
+### **73. Diferença de vendas entre os pedidos mais caros e mais baratos**
+```sql
+SELECT 
+    CustomerID,
+    MAX(Freight) AS PedidoMaisCaro,
+    MIN(Freight) AS PedidoMaisBarato,
+    MAX(Freight) - MIN(Freight) AS Diferenca
+FROM Orders
+GROUP BY CustomerID;
+```
+
+---
+
+### **74. Ranking de vendas anuais por produto**
+```sql
+SELECT 
+    ProductID,
+    YEAR(o.OrderDate) AS Ano,
+    SUM(od.Quantity * od.UnitPrice) AS TotalVendas,
+    RANK() OVER (PARTITION BY YEAR(o.OrderDate) ORDER BY SUM(od.Quantity * od.UnitPrice) DESC) AS Ranking
+FROM [Order Details] od
+JOIN Orders o ON od.OrderID = o.OrderID
+GROUP BY ProductID, YEAR(o.OrderDate);
+```
+
+---
+
+### **75. Top 5 funcionários com mais vendas por trimestre**
+```sql
+WITH RankingFuncionarios AS (
+    SELECT 
+        EmployeeID,
+        DATEPART(YEAR, OrderDate) AS Ano,
+        DATEPART(QUARTER, OrderDate) AS Trimestre,
+        SUM(Freight) AS TotalVendas,
+        RANK() OVER (PARTITION BY DATEPART(YEAR, OrderDate), DATEPART(QUARTER, OrderDate) ORDER BY SUM(Freight) DESC) AS Ranking
+    FROM Orders
+    GROUP BY EmployeeID, DATEPART(YEAR, OrderDate), DATEPART(QUARTER, OrderDate)
+)
+SELECT * 
+FROM RankingFuncionarios
+WHERE Ranking <= 5;
+```
+
+---
+
+### **76. Média de vendas por cliente nos últimos 12 meses**
+```sql
+SELECT 
+    CustomerID,
+    YEAR(OrderDate) AS Ano,
+    MONTH(OrderDate) AS Mes,
+    AVG(Freight) OVER (PARTITION BY CustomerID ORDER BY YEAR(OrderDate), MONTH(OrderDate) ROWS BETWEEN 11 PRECEDING AND CURRENT ROW) AS MediaUltimos12Meses
+FROM Orders;
+```
+
+---
+
+### **77. Percentual acumulado de vendas em relação ao total geral**
+```sql
+SELECT 
+    ProductID,
+    SUM(Quantity * UnitPrice) AS TotalVendas,
+    SUM(SUM(Quantity * UnitPrice)) OVER (ORDER BY SUM(Quantity * UnitPrice) DESC) * 100.0 / SUM(SUM(Quantity * UnitPrice)) OVER () AS PercentualAcumulado
+FROM [Order Details]
+GROUP BY ProductID;
+```
+
+---
+
+### **78. Diferença percentual de vendas entre categorias**
+```sql
+SELECT 
+    c.CategoryID,
+    c.CategoryName,
+    SUM(od.Quantity * od.UnitPrice) AS TotalVendas,
+    (SUM(od.Quantity * od.UnitPrice) - LAG(SUM(od.Quantity * od.UnitPrice)) OVER (ORDER BY c.CategoryID)) * 100.0 / 
+    LAG(SUM(od.Quantity * od.UnitPrice)) OVER (ORDER BY c.CategoryID) AS DiferencaPercentual
+FROM [Order Details] od
+JOIN Products p ON od.ProductID = p.ProductID
+JOIN Categories c ON p.CategoryID = c.CategoryID
+GROUP BY c.CategoryID, c.CategoryName;
+```
+
+---
+
+### **79. Pedidos acima da média de vendas mensais**
+```sql
+WITH MediaMensal AS (
+    SELECT 
+        YEAR(OrderDate) AS Ano,
+        MONTH(OrderDate) AS Mes,
+        AVG(Freight) AS MediaMensal
+    FROM Orders
+    GROUP BY YEAR(OrderDate), MONTH(OrderDate)
+)
+SELECT 
+    o.OrderID,
+    o.CustomerID,
+    o.Freight,
+    m.MediaMensal
+FROM Orders o
+JOIN MediaMensal m ON YEAR(o.OrderDate) = m.Ano AND MONTH(o.OrderDate) = m.Mes
+WHERE o.Freight > m.MediaMensal;
+```
+
+---
+
+### **80. Soma acumulada e média móvel de vendas por produto**
+```sql
+SELECT 
+    ProductID,
+    SUM(Quantity * UnitPrice) AS TotalVendas,
+    SUM(SUM(Quantity * UnitPrice)) OVER (PARTITION BY ProductID ORDER BY ProductID) AS SomaAcumulada,
+    AVG(SUM(Quantity * UnitPrice)) OVER (PARTITION BY ProductID ORDER BY ProductID ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS MediaMovel
+FROM [Order Details]
+GROUP BY ProductID;
+```
+
+---
+
+### **81. Ranking de vendas de cada funcionário por cliente**
+```sql
+SELECT 
+    EmployeeID,
+    CustomerID,
+    SUM(Freight) AS TotalVendas,
+    RANK() OVER (PARTITION BY CustomerID ORDER BY SUM(Freight) DESC) AS Ranking
+FROM Orders
+GROUP BY EmployeeID, CustomerID;
+```
+
+---
+
+### **82. Soma acumulada de vendas por região**
+```sql
+SELECT 
+    ShipRegion,
+    SUM(Freight) AS TotalVendas,
+    SUM(SUM(Freight)) OVER (PARTITION BY ShipRegion ORDER BY ShipRegion) AS SomaAcumulada
+FROM Orders
+GROUP BY ShipRegion;
+```
+
+---
+
+### **83. Pedidos com frete maior que a média de cada mês**
+```sql
+WITH MediaMensal AS (
+    SELECT 
+        YEAR(OrderDate) AS Ano,
+        MONTH(OrderDate) AS Mes,
+        AVG(Freight) AS MediaMensal
+    FROM Orders
+    GROUP BY YEAR(OrderDate), MONTH(OrderDate)
+)
+SELECT 
+    o.OrderID,
+    o.CustomerID,
+    o.Freight,
+    m.MediaMensal
+FROM Orders o
+JOIN MediaMensal m ON YEAR(o.OrderDate) = m.Ano AND MONTH(o.OrderDate) = m.Mes
+WHERE o.Freight > m.MediaMensal;
+```
+
+---
+
+### **84. Categorias com maior faturamento por ano**
+```sql
+WITH FaturamentoAnual AS (
+    SELECT 
+        c.CategoryID,
+        c.CategoryName,
+        YEAR(o.OrderDate) AS Ano,
+        SUM(od.Quantity * od.UnitPrice) AS TotalFaturamento,
+        RANK() OVER (PARTITION BY YEAR(o.OrderDate) ORDER BY SUM(od.Quantity * od.UnitPrice) DESC) AS Ranking
+    FROM [Order Details] od
+    JOIN Products p ON od.ProductID = p.ProductID
+    JOIN Categories c ON p.CategoryID = c.CategoryID
+    JOIN Orders o ON od.OrderID = o.OrderID
+    GROUP BY c.CategoryID, c.CategoryName, YEAR(o.OrderDate)
+)
+SELECT * 
+FROM FaturamentoAnual
+WHERE Ranking = 1;
+```
+
+---
+
+### **85. Produtos com vendas abaixo da média de sua categoria**
+```sql
+WITH MediaCategoria AS (
+    SELECT 
+        p.CategoryID,
+        AVG(od.Quantity * od.UnitPrice) AS MediaCategoria
+    FROM [Order Details] od
+    JOIN Products p ON od.ProductID = p.ProductID
+    GROUP BY p.CategoryID
+)
+SELECT 
+    p.ProductID,
+    p.ProductName,
+    p.CategoryID,
+    SUM(od.Quantity * od.UnitPrice) AS TotalVendas,
+    mc.MediaCategoria
+FROM [Order Details] od
+JOIN Products p ON od.ProductID = p.ProductID
+JOIN MediaCategoria mc ON p.CategoryID = mc.CategoryID
+GROUP BY p.ProductID, p.ProductName, p.CategoryID, mc.MediaCategoria
+HAVING SUM(od.Quantity * od.UnitPrice) < mc.MediaCategoria;
+```
+
+---
+
+### **86. Produtos com maior variação de vendas entre anos**
+```sql
+WITH VendasAnuais AS (
+    SELECT 
+        p.ProductID,
+        p.ProductName,
+        YEAR(o.OrderDate) AS Ano,
+        SUM(od.Quantity) AS TotalVendas
+    FROM [Order Details] od
+    JOIN Products p ON od.ProductID = p.ProductID
+    JOIN Orders o ON od.OrderID = o.OrderID
+    GROUP BY p.ProductID, p.ProductName, YEAR(o.OrderDate)
+)
+SELECT 
+    ProductID,
+    ProductName,
+    Ano,
+    TotalVendas,
+    TotalVendas - LAG(TotalVendas) OVER (PARTITION BY ProductID ORDER BY Ano) AS Variacao
+FROM VendasAnuais;
+```
+
+---
+
+### **87. Clientes com mais de 3 pedidos consecutivos com aumento de frete**
+```sql
+WITH FreteCrescente AS (
+    SELECT 
+        CustomerID,
+        OrderID,
+        Freight,
+        LAG(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS FreteAnterior,
+        CASE 
+            WHEN Freight > LAG(Freight) OVER (PARTITION BY CustomerID ORDER BY OrderDate) THEN 1
+            ELSE 0
+        END AS AumentoFrete
+    FROM Orders
+)
+SELECT 
+    CustomerID
+FROM FreteCrescente
+GROUP BY CustomerID
+HAVING SUM(AumentoFrete) >= 3;
+```
+
+---
+
+### **88. Diferença entre vendas acumuladas de dois fornecedores**
+```sql
+SELECT 
+    s.SupplierID,
+    s.CompanyName,
+    SUM(od.Quantity * od.UnitPrice) AS TotalVendas,
+    SUM(SUM(od.Quantity * od.UnitPrice)) OVER (ORDER BY s.SupplierID ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS VendasAcumuladas
+FROM [Order Details] od
+JOIN Products p ON od.ProductID = p.ProductID
+JOIN Suppliers s ON p.SupplierID = s.SupplierID
+GROUP BY s.SupplierID, s.CompanyName;
+```
+
+---
+
+### **89. Identificar os 5 clientes mais lucrativos**
+```sql
+SELECT 
+    o.CustomerID,
+    SUM(od.Quantity * od.UnitPrice) AS TotalGasto,
+    RANK() OVER (ORDER BY SUM(od.Quantity * od.UnitPrice) DESC) AS Ranking
+FROM [Order Details] od
+JOIN Orders o ON od.OrderID = o.OrderID
+GROUP BY o.CustomerID
+HAVING RANK() <= 5;
+```
+
+---
+
+### **90. Analisar sazonalidade de vendas (média por estação do ano)**
+```sql
+SELECT 
+    DATEPART(YEAR, OrderDate) AS Ano,
+    CASE 
+        WHEN DATEPART(MONTH, OrderDate) IN (12, 1, 2) THEN 'Inverno'
+        WHEN DATEPART(MONTH, OrderDate) IN (3, 4, 5) THEN 'Primavera'
+        WHEN DATEPART(MONTH, OrderDate) IN (6, 7, 8) THEN 'Verão'
+        ELSE 'Outono'
+    END AS Estacao,
+    AVG(Freight) AS MediaFrete
+FROM Orders
+GROUP BY DATEPART(YEAR, OrderDate), 
+         CASE 
+            WHEN DATEPART(MONTH, OrderDate) IN (12, 1, 2) THEN 'Inverno'
+            WHEN DATEPART(MONTH, OrderDate) IN (3, 4, 5) THEN 'Primavera'
+            WHEN DATEPART(MONTH, OrderDate) IN (6, 7, 8) THEN 'Verão'
+            ELSE 'Outono'
+         END;
+```
+
+---
+
+### **91. Percentual de participação de cada produto no faturamento total**
+```sql
+SELECT 
+    p.ProductID,
+    p.ProductName,
+    SUM(od.Quantity * od.UnitPrice) AS TotalFaturado,
+    SUM(od.Quantity * od.UnitPrice) * 100.0 / SUM(SUM(od.Quantity * od.UnitPrice)) OVER () AS PercentualParticipacao
+FROM [Order Details] od
+JOIN Products p ON od.ProductID = p.ProductID
+GROUP BY p.ProductID, p.ProductName;
+```
+
+---
+
+### **92. Quantidade de vendas únicas por categoria**
+```sql
+SELECT 
+    c.CategoryID,
+    c.CategoryName,
+    COUNT(DISTINCT o.OrderID) AS TotalPedidosUnicos
+FROM Orders o
+JOIN [Order Details] od ON o.OrderID = od.OrderID
+JOIN Products p ON od.ProductID = p.ProductID
+JOIN Categories c ON p.CategoryID = c.CategoryID
+GROUP BY c.CategoryID, c.CategoryName;
+```
+
+---
+
+### **93. Funcionários com maior número de pedidos por trimestre**
+```sql
+WITH PedidosPorTrimestre AS (
+    SELECT 
+        EmployeeID,
+        DATEPART(YEAR, OrderDate) AS Ano,
+        DATEPART(QUARTER, OrderDate) AS Trimestre,
+        COUNT(OrderID) AS TotalPedidos
+    FROM Orders
+    GROUP BY EmployeeID, DATEPART(YEAR, OrderDate), DATEPART(QUARTER, OrderDate)
+)
+SELECT 
+    EmployeeID,
+    Ano,
+    Trimestre,
+    TotalPedidos,
+    RANK() OVER (PARTITION BY Ano, Trimestre ORDER BY TotalPedidos DESC) AS Ranking
+FROM PedidosPorTrimestre;
+```
+
+---
+
+### **94. Produtos mais vendidos em cada país**
+```sql
+WITH ProdutosPais AS (
+    SELECT 
+        o.ShipCountry,
+        p.ProductName,
+        SUM(od.Quantity) AS TotalVendas,
+        RANK() OVER (PARTITION BY o.ShipCountry ORDER BY SUM(od.Quantity) DESC) AS Ranking
+    FROM [Order Details] od
+    JOIN Products p ON od.ProductID = p.ProductID
+    JOIN Orders o ON od.OrderID = o.OrderID
+    GROUP BY o.ShipCountry, p.ProductName
+)
+SELECT * 
+FROM ProdutosPais
+WHERE Ranking = 1;
+```
+
+---
+
+### **95. Clientes com maior intervalo entre pedidos consecutivos**
+```sql
+WITH Intervalos AS (
+    SELECT 
+        CustomerID,
+        OrderID,
+        OrderDate,
+        LAG(OrderDate) OVER (PARTITION BY CustomerID ORDER BY OrderDate) AS PedidoAnterior,
+        DATEDIFF(DAY, LAG(OrderDate) OVER (PARTITION BY CustomerID ORDER BY OrderDate), OrderDate) AS IntervaloDias
+    FROM Orders
+)
+SELECT 
+    CustomerID,
+    MAX(IntervaloDias) AS MaiorIntervalo
+FROM Intervalos
+WHERE PedidoAnterior IS NOT NULL
+GROUP BY CustomerID
+ORDER BY MaiorIntervalo DESC;
+```
+
+---
+
+### **96. Categorias com menor variação de vendas mensais**
+```sql
+WITH VendasMensais AS (
+    SELECT 
+        c.CategoryID,
+        c.CategoryName,
+        YEAR(o.OrderDate) AS Ano,
+        MONTH(o.OrderDate) AS Mes,
+        SUM(od.Quantity * od.UnitPrice) AS TotalVendas
+    FROM [Order Details] od
+    JOIN Products p ON od.ProductID = p.ProductID
+    JOIN Categories c ON p.CategoryID = c.CategoryID
+    JOIN Orders o ON od.OrderID = o.OrderID
+    GROUP BY c.CategoryID, c.CategoryName, YEAR(o.OrderDate), MONTH(o.OrderDate)
+),
+Variacoes AS (
+    SELECT 
+        CategoryID,
+        CategoryName,
+        TotalVendas - LAG(TotalVendas) OVER (PARTITION BY CategoryID ORDER BY Ano, Mes) AS Variacao
+    FROM VendasMensais
+)
+SELECT 
+    CategoryID,
+    CategoryName,
+    AVG(ABS(Variacao)) AS MediaVariacao
+FROM Variacoes
+WHERE Variacao IS NOT NULL
+GROUP BY CategoryID, CategoryName
+ORDER BY MediaVariacao ASC;
+```
+
+---
+
+### **97. Funcionário com o maior valor médio de vendas por pedido**
+```sql
+SELECT 
+    EmployeeID,
+    AVG(Freight) AS ValorMedio
+FROM Orders
+GROUP BY EmployeeID
+ORDER BY ValorMedio DESC
+LIMIT 1;
+```
+
+---
+
+### **98. Percentual acumulado de pedidos de cada país no total de pedidos**
+```sql
+SELECT 
+    ShipCountry,
+    COUNT(OrderID) AS TotalPedidos,
+    COUNT(OrderID) * 100.0 / SUM(COUNT(OrderID)) OVER () AS Percentual,
+    SUM(COUNT(OrderID)) OVER (ORDER BY COUNT(OrderID) DESC) * 100.0 / SUM(COUNT(OrderID)) OVER () AS PercentualAcumulado
+FROM Orders
+GROUP BY ShipCountry
+ORDER BY PercentualAcumulado;
+```
+
+---
+
+### **99. Produtos com maior diferença entre o preço unitário e o preço médio da categoria**
+```sql
+WITH MediaCategoria AS (
+    SELECT 
+        p.CategoryID,
+        AVG(p.UnitPrice) AS PrecoMedio
+    FROM Products p
+    GROUP BY p.CategoryID
+)
+SELECT 
+    p.ProductID,
+    p.ProductName,
+    p.CategoryID,
+    p.UnitPrice,
+    mc.PrecoMedio,
+    ABS(p.UnitPrice - mc.PrecoMedio) AS Diferenca
+FROM Products p
+JOIN MediaCategoria mc ON p.CategoryID = mc.CategoryID
+ORDER BY Diferenca DESC;
+```
+
+---
+
+### **100. Top 3 clientes com maior quantidade total de pedidos**
+```sql
+SELECT 
+    CustomerID,
+    COUNT(OrderID) AS TotalPedidos,
+    RANK() OVER (ORDER BY COUNT(OrderID) DESC) AS Ranking
+FROM Orders
+GROUP BY CustomerID
+HAVING RANK() <= 3;
+```
+
+---

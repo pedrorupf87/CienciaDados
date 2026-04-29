@@ -1,0 +1,64 @@
+
+### **Exercícios Avançados**  
+
+1. **Consulta dinâmica com transação e log de erros:**  
+   Crie uma query dinâmica que liste os pedidos por cliente e período. A execução deve ser feita dentro de uma transação, e qualquer erro deve ser registrado em uma tabela de logs.
+
+2. **Inserção dinâmica de novos clientes com validação:**  
+   Implemente uma query dinâmica para inserir um novo cliente com base em dados fornecidos. Utilize uma transação para garantir consistência, e registre erros em caso de falha.
+
+3. **Relatório de vendas com rollback:**  
+   Desenvolva uma query dinâmica que gere um relatório de vendas por categoria. Se ocorrer algum erro durante a execução, a transação deve ser revertida e o erro registrado.
+
+4. **Atualização dinâmica de estoque:**  
+   Crie um script que use queries dinâmicas para atualizar o estoque de produtos de uma categoria específica. Garanta a integridade com transações e registre falhas em logs.
+
+5. **Exclusão dinâmica de pedidos:**  
+   Escreva uma query dinâmica para excluir pedidos antigos com base em um critério fornecido pelo usuário. Utilize uma transação e implemente rollback e registro de erros em caso de falhas.
+
+6. **Alteração de preços com logs de erro:**  
+   Desenvolva uma query dinâmica para alterar preços de produtos de forma percentual. A operação deve ser transacional, com rollback em caso de erro, e o erro registrado.
+
+7. **Transferência de estoque dinâmica:**  
+   Implemente uma query dinâmica para transferir produtos entre armazéns. A operação deve estar dentro de uma transação, e erros de execução devem ser tratados e registrados.
+
+8. **Criação dinâmica de tabelas temporárias:**  
+   Elabore uma query dinâmica para criar uma tabela temporária com colunas especificadas pelo usuário. Garanta que qualquer erro seja tratado e registrado.
+
+9. **Resumo dinâmico de vendas por cliente:**  
+   Crie uma query dinâmica para gerar um resumo de vendas por cliente. Utilize transações para garantir consistência e registre erros caso algo falhe.
+
+10. **Inserção dinâmica de detalhes de pedido:**  
+    Desenvolva uma query dinâmica que insira detalhes de pedidos em uma tabela. A inserção deve ser transacional e incluir tratamento de erros.
+
+11. **Criação dinâmica de índices com validação:**  
+    Implemente uma query dinâmica para criar índices em colunas fornecidas pelo usuário. Certifique-se de tratar erros, registrá-los e aplicar rollback em caso de falha.
+
+12. **Busca dinâmica com rollback automático:**  
+    Crie uma query dinâmica para buscar informações de clientes com base em critérios variados. A execução deve estar dentro de uma transação e registrar erros.
+
+13. **Cálculo dinâmico de descontos:**  
+    Desenvolva uma query dinâmica que calcule e aplique descontos a produtos de uma categoria. A operação deve ser transacional e incluir logs de erros em caso de falha.
+
+14. **Consolidação de vendas com query dinâmica:**  
+    Elabore uma query dinâmica para consolidar dados de vendas em uma tabela de resumo. A operação deve garantir rollback e registro de erros em caso de falhas.
+
+15. **Exclusão condicional de registros:**  
+    Crie uma query dinâmica para excluir registros de uma tabela com base em critérios fornecidos pelo usuário. A exclusão deve ser transacional e com tratamento de erros.
+
+16. **Consulta personalizada com logs de execução:**  
+    Desenvolva uma query dinâmica para consultar tabelas específicas com colunas escolhidas dinamicamente. Registre erros em logs e use transações para proteger os dados.
+
+17. **Alteração de estrutura de tabela dinamicamente:**  
+    Implemente uma query dinâmica para adicionar ou remover colunas de uma tabela. A execução deve ser feita dentro de uma transação, com rollback em caso de erro.
+
+18. **Exportação dinâmica para tabela externa:**  
+    Crie uma query dinâmica para exportar dados de uma tabela para outra baseada em critérios fornecidos. Garanta a consistência com transações e registre erros.
+
+19. **Atualização em lote com critérios dinâmicos:**  
+    Desenvolva uma query dinâmica para atualizar registros em lote com base em critérios dinâmicos. Utilize transações e implemente rollback em caso de falha.
+
+20. **Relatório de desempenho com query dinâmica:**  
+    Elabore uma query dinâmica para calcular métricas de desempenho de vendas, com base em parâmetros fornecidos pelo usuário. A operação deve ser transacional, com tratamento e registro de erros.
+
+---

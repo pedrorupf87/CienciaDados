@@ -1,0 +1,1277 @@
+Segue o **gabarito** com as soluções para as questões de **cursores** (01 a 10):
+
+---
+
+### **1. Atualizar o campo `Region` na tabela `Customers` usando um cursor**
+```sql
+DECLARE @CustomerID NVARCHAR(5), @Region NVARCHAR(15);
+
+DECLARE customer_cursor CURSOR FOR
+SELECT CustomerID, Region
+FROM Customers;
+
+OPEN customer_cursor;
+
+FETCH NEXT FROM customer_cursor INTO @CustomerID, @Region;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    UPDATE Customers
+    SET Region = ISNULL(@Region, 'N/A')
+    WHERE CustomerID = @CustomerID;
+    
+    FETCH NEXT FROM customer_cursor INTO @CustomerID, @Region;
+END;
+
+CLOSE customer_cursor;
+DEALLOCATE customer_cursor;
+```
+
+---
+
+### **2. Calcular o total de pedidos para cada cliente**
+```sql
+DECLARE @CustomerID NVARCHAR(5), @TotalOrders INT;
+
+DECLARE customer_cursor CURSOR FOR
+SELECT CustomerID
+FROM Customers;
+
+OPEN customer_cursor;
+
+FETCH NEXT FROM customer_cursor INTO @CustomerID;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    SELECT @TotalOrders = COUNT(*)
+    FROM Orders
+    WHERE CustomerID = @CustomerID;
+
+    INSERT INTO #CustomerOrderSummary (CustomerID, TotalOrders)
+    VALUES (@CustomerID, @TotalOrders);
+
+    FETCH NEXT FROM customer_cursor INTO @CustomerID;
+END;
+
+CLOSE customer_cursor;
+DEALLOCATE customer_cursor;
+```
+
+---
+
+### **3. Marcar pedidos de "Alto custo" no campo `Freight`**
+```sql
+DECLARE @OrderID INT, @Freight MONEY;
+
+DECLARE orders_cursor CURSOR FOR
+SELECT OrderID, Freight
+FROM Orders;
+
+OPEN orders_cursor;
+
+FETCH NEXT FROM orders_cursor INTO @OrderID, @Freight;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    UPDATE Orders
+    SET FreightStatus = CASE 
+                            WHEN @Freight > 100 THEN 'Alto custo'
+                            ELSE 'Normal'
+                        END
+    WHERE OrderID = @OrderID;
+
+    FETCH NEXT FROM orders_cursor INTO @OrderID, @Freight;
+END;
+
+CLOSE orders_cursor;
+DEALLOCATE orders_cursor;
+```
+
+---
+
+### **4. Criar pedidos automáticos para produtos com estoque baixo**
+```sql
+DECLARE @ProductID INT, @UnitsInStock INT;
+
+DECLARE low_stock_cursor CURSOR FOR
+SELECT ProductID, UnitsInStock
+FROM Products
+WHERE UnitsInStock < 10;
+
+OPEN low_stock_cursor;
+
+FETCH NEXT FROM low_stock_cursor INTO @ProductID, @UnitsInStock;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    INSERT INTO Orders (CustomerID, EmployeeID, OrderDate)
+    VALUES ('ALFKI', 1, GETDATE());
+
+    INSERT INTO [Order Details] (OrderID, ProductID, Quantity)
+    VALUES (SCOPE_IDENTITY(), @ProductID, 50 - @UnitsInStock);
+
+    FETCH NEXT FROM low_stock_cursor INTO @ProductID, @UnitsInStock;
+END;
+
+CLOSE low_stock_cursor;
+DEALLOCATE low_stock_cursor;
+```
+
+---
+
+### **5. Atualizar preços dos produtos com base no fornecedor**
+```sql
+DECLARE @ProductID INT, @SupplierID INT, @Price MONEY;
+
+DECLARE product_cursor CURSOR FOR
+SELECT ProductID, SupplierID, UnitPrice
+FROM Products;
+
+OPEN product_cursor;
+
+FETCH NEXT FROM product_cursor INTO @ProductID, @SupplierID, @Price;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    UPDATE Products
+    SET UnitPrice = @Price * CASE 
+                                WHEN @SupplierID = 1 THEN 0.9
+                                WHEN @SupplierID = 2 THEN 0.85
+                                ELSE 1.0
+                             END
+    WHERE ProductID = @ProductID;
+
+    FETCH NEXT FROM product_cursor INTO @ProductID, @SupplierID, @Price;
+END;
+
+CLOSE product_cursor;
+DEALLOCATE product_cursor;
+```
+
+---
+
+### **6. Calcular pedidos processados por funcionário**
+```sql
+DECLARE @EmployeeID INT, @TotalOrders INT;
+
+DECLARE employee_cursor CURSOR FOR
+SELECT EmployeeID
+FROM Employees;
+
+OPEN employee_cursor;
+
+FETCH NEXT FROM employee_cursor INTO @EmployeeID;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    SELECT @TotalOrders = COUNT(*)
+    FROM Orders
+    WHERE EmployeeID = @EmployeeID;
+
+    INSERT INTO #EmployeeOrderSummary (EmployeeID, TotalOrders)
+    VALUES (@EmployeeID, @TotalOrders);
+
+    FETCH NEXT FROM employee_cursor INTO @EmployeeID;
+END;
+
+CLOSE employee_cursor;
+DEALLOCATE employee_cursor;
+```
+
+---
+
+### **7. Listar os 5 clientes com mais pedidos**
+```sql
+DECLARE @CustomerID NVARCHAR(5), @TotalOrders INT;
+
+DECLARE top_customers_cursor CURSOR FOR
+SELECT TOP 5 CustomerID, COUNT(*) AS TotalOrders
+FROM Orders
+GROUP BY CustomerID
+ORDER BY TotalOrders DESC;
+
+OPEN top_customers_cursor;
+
+FETCH NEXT FROM top_customers_cursor INTO @CustomerID, @TotalOrders;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    PRINT CONCAT('Cliente: ', @CustomerID, ' | Pedidos: ', @TotalOrders);
+
+    FETCH NEXT FROM top_customers_cursor INTO @CustomerID, @TotalOrders;
+END;
+
+CLOSE top_customers_cursor;
+DEALLOCATE top_customers_cursor;
+```
+
+---
+
+### **8. Criar tabela de resumo de vendas por região**
+```sql
+DECLARE @Country NVARCHAR(15), @TotalSales MONEY;
+
+DECLARE sales_cursor CURSOR FOR
+SELECT ShipCountry
+FROM Orders
+GROUP BY ShipCountry;
+
+OPEN sales_cursor;
+
+FETCH NEXT FROM sales_cursor INTO @Country;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    SELECT @TotalSales = SUM(Freight)
+    FROM Orders
+    WHERE ShipCountry = @Country;
+
+    INSERT INTO #SalesByCountry (Country, TotalSales)
+    VALUES (@Country, @TotalSales);
+
+    FETCH NEXT FROM sales_cursor INTO @Country;
+END;
+
+CLOSE sales_cursor;
+DEALLOCATE sales_cursor;
+```
+
+---
+
+### **9. Excluir registros duplicados na tabela `Customers`**
+```sql
+DECLARE @CustomerID NVARCHAR(5), @DuplicateCount INT;
+
+DECLARE duplicate_cursor CURSOR FOR
+SELECT CustomerID
+FROM Customers
+GROUP BY CustomerID
+HAVING COUNT(*) > 1;
+
+OPEN duplicate_cursor;
+
+FETCH NEXT FROM duplicate_cursor INTO @CustomerID;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    DELETE FROM Customers
+    WHERE CustomerID = @CustomerID
+    AND CustomerID NOT IN (SELECT MIN(CustomerID) FROM Customers GROUP BY CustomerID);
+
+    FETCH NEXT FROM duplicate_cursor INTO @CustomerID;
+END;
+
+CLOSE duplicate_cursor;
+DEALLOCATE duplicate_cursor;
+```
+
+---
+
+### **10. Gerar alertas para pedidos atrasados**
+```sql
+DECLARE @OrderID INT, @ShippedDate DATETIME, @RequiredDate DATETIME;
+
+DECLARE late_orders_cursor CURSOR FOR
+SELECT OrderID, ShippedDate, RequiredDate
+FROM Orders
+WHERE ShippedDate > RequiredDate;
+
+OPEN late_orders_cursor;
+
+FETCH NEXT FROM late_orders_cursor INTO @OrderID, @ShippedDate, @RequiredDate;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    PRINT CONCAT('Pedido ', @OrderID, ' está atrasado. Entrega necessária até ', CONVERT(VARCHAR, @RequiredDate, 103));
+
+    FETCH NEXT FROM late_orders_cursor INTO @OrderID, @ShippedDate, @RequiredDate;
+END;
+
+CLOSE late_orders_cursor;
+DEALLOCATE late_orders_cursor;
+```
+
+---
+
+Segue o **gabarito** com as soluções para as questões **11 a 20**, abordando **XML** no SQL Server:
+
+---
+
+### **11. Converter `Orders` para XML incluindo `OrderDetails`**
+```sql
+SELECT 
+    Orders.OrderID,
+    Orders.CustomerID,
+    Orders.OrderDate,
+    (
+        SELECT 
+            [Order Details].ProductID,
+            [Order Details].UnitPrice,
+            [Order Details].Quantity
+        FROM [Order Details]
+        WHERE [Order Details].OrderID = Orders.OrderID
+        FOR XML PATH('OrderDetail'), TYPE
+    ) AS OrderDetails
+FROM Orders
+FOR XML PATH('Order'), ROOT('Orders');
+```
+
+---
+
+### **12. Extrair informações de um documento XML armazenado**
+**Exemplo: Documento XML armazenado em uma tabela**
+```sql
+DECLARE @xmlData XML = 
+    '<Orders>
+        <Order>
+            <OrderID>10248</OrderID>
+            <CustomerID>VINET</CustomerID>
+            <OrderDate>1996-07-04</OrderDate>
+        </Order>
+        <Order>
+            <OrderID>10249</OrderID>
+            <CustomerID>TOMSP</CustomerID>
+            <OrderDate>1996-07-05</OrderDate>
+        </Order>
+    </Orders>';
+
+SELECT 
+    T.C.value('(OrderID)[1]', 'INT') AS OrderID,
+    T.C.value('(CustomerID)[1]', 'NVARCHAR(5)') AS CustomerID,
+    T.C.value('(OrderDate)[1]', 'DATETIME') AS OrderDate
+FROM @xmlData.nodes('/Orders/Order') AS T(C);
+```
+
+---
+
+### **13. Gerar um documento XML consolidado de `Products` e `Suppliers`**
+```sql
+SELECT 
+    Suppliers.SupplierID,
+    Suppliers.CompanyName,
+    (
+        SELECT 
+            Products.ProductID,
+            Products.ProductName,
+            Products.UnitPrice
+        FROM Products
+        WHERE Products.SupplierID = Suppliers.SupplierID
+        FOR XML PATH('Product'), TYPE
+    ) AS Products
+FROM Suppliers
+FOR XML PATH('Supplier'), ROOT('Suppliers');
+```
+
+---
+
+### **14. Procedure para inserir clientes a partir de um documento XML**
+```sql
+CREATE PROCEDURE InsertCustomersFromXML
+    @CustomerData XML
+AS
+BEGIN
+    INSERT INTO Customers (CustomerID, CompanyName, ContactName, Country)
+    SELECT 
+        C.value('(CustomerID)[1]', 'NVARCHAR(5)'),
+        C.value('(CompanyName)[1]', 'NVARCHAR(50)'),
+        C.value('(ContactName)[1]', 'NVARCHAR(50)'),
+        C.value('(Country)[1]', 'NVARCHAR(50)')
+    FROM @CustomerData.nodes('/Customers/Customer') AS T(C);
+END;
+
+-- Exemplo de uso:
+DECLARE @xmlData XML = 
+    '<Customers>
+        <Customer>
+            <CustomerID>NEW01</CustomerID>
+            <CompanyName>New Company</CompanyName>
+            <ContactName>John Doe</ContactName>
+            <Country>USA</Country>
+        </Customer>
+    </Customers>';
+
+EXEC InsertCustomersFromXML @CustomerData = @xmlData;
+```
+
+---
+
+### **15. Buscar pedidos do último mês de um campo XML com XPath**
+```sql
+DECLARE @xmlOrders XML = 
+    '<Orders>
+        <Order>
+            <OrderID>10248</OrderID>
+            <OrderDate>2024-12-01</OrderDate>
+        </Order>
+        <Order>
+            <OrderID>10249</OrderID>
+            <OrderDate>2024-11-15</OrderDate>
+        </Order>
+    </Orders>';
+
+SELECT 
+    T.C.value('(OrderID)[1]', 'INT') AS OrderID,
+    T.C.value('(OrderDate)[1]', 'DATETIME') AS OrderDate
+FROM @xmlOrders.nodes('/Orders/Order[OrderDate >= "2024-12-01"]') AS T(C);
+```
+
+---
+
+### **16. Atualizar `Employees` com informações de um campo XML**
+```sql
+DECLARE @xmlData XML = 
+    '<Employees>
+        <Employee>
+            <EmployeeID>1</EmployeeID>
+            <Title>Manager</Title>
+        </Employee>
+        <Employee>
+            <EmployeeID>2</EmployeeID>
+            <Title>Senior Developer</Title>
+        </Employee>
+    </Employees>';
+
+UPDATE Employees
+SET Title = T.C.value('(Title)[1]', 'NVARCHAR(50)')
+FROM Employees
+INNER JOIN @xmlData.nodes('/Employees/Employee') AS T(C)
+ON Employees.EmployeeID = T.C.value('(EmployeeID)[1]', 'INT');
+```
+
+---
+
+### **17. Relatório XML combinando `Orders`, `OrderDetails` e `Products`**
+```sql
+SELECT 
+    Orders.OrderID,
+    Orders.OrderDate,
+    (
+        SELECT 
+            [Order Details].ProductID,
+            Products.ProductName,
+            [Order Details].Quantity,
+            [Order Details].UnitPrice
+        FROM [Order Details]
+        INNER JOIN Products ON [Order Details].ProductID = Products.ProductID
+        WHERE [Order Details].OrderID = Orders.OrderID
+        FOR XML PATH('OrderDetail'), TYPE
+    ) AS OrderDetails
+FROM Orders
+FOR XML PATH('Order'), ROOT('Orders');
+```
+
+---
+
+### **18. Converter `Customers` para XML agrupando por país**
+```sql
+SELECT 
+    Country,
+    (
+        SELECT 
+            CustomerID,
+            CompanyName,
+            ContactName
+        FROM Customers AS C
+        WHERE C.Country = Customers.Country
+        FOR XML PATH('Customer'), TYPE
+    ) AS Customers
+FROM Customers
+GROUP BY Country
+FOR XML PATH('Country'), ROOT('Countries');
+```
+
+---
+
+### **19. Função para inserir produtos a partir de um documento XML**
+```sql
+CREATE FUNCTION InsertProductsFromXML (@ProductData XML)
+RETURNS TABLE
+AS
+RETURN
+    SELECT 
+        P.value('(ProductName)[1]', 'NVARCHAR(50)') AS ProductName,
+        P.value('(SupplierID)[1]', 'INT') AS SupplierID,
+        P.value('(UnitPrice)[1]', 'MONEY') AS UnitPrice
+    FROM @ProductData.nodes('/Products/Product') AS T(P);
+
+-- Uso da função:
+DECLARE @xmlProducts XML = 
+    '<Products>
+        <Product>
+            <ProductName>New Product</ProductName>
+            <SupplierID>1</SupplierID>
+            <UnitPrice>15.5</UnitPrice>
+        </Product>
+    </Products>';
+
+INSERT INTO Products (ProductName, SupplierID, UnitPrice)
+SELECT * FROM dbo.InsertProductsFromXML(@xmlProducts);
+```
+
+---
+
+### **20. Extração e cálculo de descontos de um campo XML**
+```sql
+DECLARE @xmlDiscounts XML = 
+    '<Discounts>
+        <Order>
+            <OrderID>10248</OrderID>
+            <Discount>10.5</Discount>
+        </Order>
+        <Order>
+            <OrderID>10249</OrderID>
+            <Discount>5.0</Discount>
+        </Order>
+    </Discounts>';
+
+SELECT 
+    T.C.value('(OrderID)[1]', 'INT') AS OrderID,
+    T.C.value('(Discount)[1]', 'MONEY') AS Discount,
+    T.C.value('(Discount)[1]', 'MONEY') * 1.1 AS AdjustedDiscount -- Exemplo de cálculo
+FROM @xmlDiscounts.nodes('/Discounts/Order') AS T(C);
+```
+
+---
+
+Segue o **gabarito** das questões **21 a 30**, abordando **JSON** no SQL Server:
+
+---
+
+### **21. Converter dados de `Customers` para JSON**
+```sql
+SELECT CustomerID, CompanyName, ContactName, Country
+FROM Customers
+FOR JSON AUTO;
+```
+
+---
+
+### **22. Atualizar preços de produtos com base em um campo JSON**
+**Exemplo: Campo JSON com ajustes de preços por categoria**
+```sql
+DECLARE @PriceAdjustments NVARCHAR(MAX) = 
+    '[
+        {"CategoryID": 1, "Adjustment": 1.1},
+        {"CategoryID": 2, "Adjustment": 0.9}
+    ]';
+
+DECLARE @CategoryID INT, @Adjustment FLOAT;
+
+-- Parse JSON e atualizar preços
+DECLARE json_cursor CURSOR FOR
+SELECT CategoryID, Adjustment
+FROM OPENJSON(@PriceAdjustments)
+WITH (
+    CategoryID INT '$.CategoryID',
+    Adjustment FLOAT '$.Adjustment'
+);
+
+OPEN json_cursor;
+
+FETCH NEXT FROM json_cursor INTO @CategoryID, @Adjustment;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    UPDATE Products
+    SET UnitPrice = UnitPrice * @Adjustment
+    WHERE CategoryID = @CategoryID;
+
+    FETCH NEXT FROM json_cursor INTO @CategoryID, @Adjustment;
+END;
+
+CLOSE json_cursor;
+DEALLOCATE json_cursor;
+```
+
+---
+
+### **23. Relatório em JSON com `Orders`, `OrderDetails` e `Shippers`**
+```sql
+SELECT 
+    Orders.OrderID,
+    Orders.OrderDate,
+    (
+        SELECT 
+            [Order Details].ProductID,
+            [Order Details].Quantity,
+            [Order Details].UnitPrice
+        FROM [Order Details]
+        WHERE [Order Details].OrderID = Orders.OrderID
+        FOR JSON AUTO
+    ) AS OrderDetails,
+    Shippers.CompanyName AS Shipper
+FROM Orders
+INNER JOIN Shippers ON Orders.ShipVia = Shippers.ShipperID
+FOR JSON AUTO;
+```
+
+---
+
+### **24. Procedure para inserir funcionários a partir de um JSON**
+```sql
+CREATE PROCEDURE InsertEmployeesFromJSON
+    @EmployeeData NVARCHAR(MAX)
+AS
+BEGIN
+    INSERT INTO Employees (LastName, FirstName, Title, Country)
+    SELECT 
+        JSON_VALUE(Value, '$.LastName'),
+        JSON_VALUE(Value, '$.FirstName'),
+        JSON_VALUE(Value, '$.Title'),
+        JSON_VALUE(Value, '$.Country')
+    FROM OPENJSON(@EmployeeData);
+END;
+
+-- Exemplo de uso:
+DECLARE @jsonData NVARCHAR(MAX) = 
+    '[
+        {"LastName": "Smith", "FirstName": "John", "Title": "Manager", "Country": "USA"},
+        {"LastName": "Doe", "FirstName": "Jane", "Title": "Developer", "Country": "UK"}
+    ]';
+
+EXEC InsertEmployeesFromJSON @EmployeeData = @jsonData;
+```
+
+---
+
+### **25. Usar JSON para armazenar e consultar preferências de clientes**
+**Adicionar uma coluna JSON e consultar dados:**
+```sql
+-- Adicionar coluna JSON
+ALTER TABLE Customers ADD Preferences NVARCHAR(MAX);
+
+-- Inserir dados JSON
+UPDATE Customers
+SET Preferences = '{"PreferredLanguage": "English", "PreferredContactMethod": "Email"}'
+WHERE CustomerID = 'ALFKI';
+
+-- Consultar dados JSON
+SELECT 
+    CustomerID,
+    JSON_VALUE(Preferences, '$.PreferredLanguage') AS PreferredLanguage,
+    JSON_VALUE(Preferences, '$.PreferredContactMethod') AS PreferredContactMethod
+FROM Customers
+WHERE JSON_VALUE(Preferences, '$.PreferredLanguage') = 'English';
+```
+
+---
+
+### **26. Converter histórico de pedidos para JSON**
+```sql
+SELECT 
+    CustomerID,
+    (
+        SELECT OrderID, OrderDate, Freight
+        FROM Orders
+        WHERE Orders.CustomerID = Customers.CustomerID
+        FOR JSON AUTO
+    ) AS OrderHistory
+FROM Customers
+FOR JSON AUTO;
+```
+
+---
+
+### **27. Converter `Suppliers` e `Products` para JSON**
+```sql
+SELECT 
+    Suppliers.SupplierID,
+    Suppliers.CompanyName,
+    (
+        SELECT ProductID, ProductName, UnitPrice
+        FROM Products
+        WHERE Products.SupplierID = Suppliers.SupplierID
+        FOR JSON AUTO
+    ) AS Products
+FROM Suppliers
+FOR JSON AUTO;
+```
+
+---
+
+### **28. Calcular valor total de pedido a partir de um campo JSON**
+**Exemplo: Campo JSON com detalhes do pedido**
+```sql
+DECLARE @OrderDetails NVARCHAR(MAX) = 
+    '[
+        {"ProductID": 1, "Quantity": 5, "UnitPrice": 20.0},
+        {"ProductID": 2, "Quantity": 3, "UnitPrice": 15.0}
+    ]';
+
+SELECT 
+    SUM(JSON_VALUE(Value, '$.Quantity') * JSON_VALUE(Value, '$.UnitPrice')) AS TotalValue
+FROM OPENJSON(@OrderDetails);
+```
+
+---
+
+### **29. Inserir pedidos a partir de um JSON**
+```sql
+CREATE PROCEDURE InsertOrdersFromJSON
+    @OrderData NVARCHAR(MAX)
+AS
+BEGIN
+    -- Inserir na tabela Orders
+    INSERT INTO Orders (CustomerID, OrderDate)
+    SELECT 
+        JSON_VALUE(Value, '$.CustomerID'),
+        JSON_VALUE(Value, '$.OrderDate')
+    FROM OPENJSON(@OrderData);
+
+    -- Obter OrderID recém-criado
+    DECLARE @OrderID INT = SCOPE_IDENTITY();
+
+    -- Inserir na tabela OrderDetails
+    INSERT INTO [Order Details] (OrderID, ProductID, Quantity, UnitPrice)
+    SELECT 
+        @OrderID,
+        JSON_VALUE(Value, '$.ProductID'),
+        JSON_VALUE(Value, '$.Quantity'),
+        JSON_VALUE(Value, '$.UnitPrice')
+    FROM OPENJSON(@OrderData, '$.OrderDetails');
+END;
+
+-- Exemplo de uso:
+DECLARE @jsonOrder NVARCHAR(MAX) = 
+    '{
+        "CustomerID": "ALFKI",
+        "OrderDate": "2025-01-01",
+        "OrderDetails": [
+            {"ProductID": 1, "Quantity": 5, "UnitPrice": 20.0},
+            {"ProductID": 2, "Quantity": 3, "UnitPrice": 15.0}
+        ]
+    }';
+
+EXEC InsertOrdersFromJSON @OrderData = @jsonOrder;
+```
+
+---
+
+### **30. Processar histórico de interação com clientes armazenado em JSON**
+**Exemplo: Campo JSON com interações**
+```sql
+DECLARE @CustomerInteractions NVARCHAR(MAX) = 
+    '[
+        {"CustomerID": "ALFKI", "ContactDate": "2024-12-01", "Type": "Email"},
+        {"CustomerID": "ALFKI", "ContactDate": "2024-12-02", "Type": "Phone"},
+        {"CustomerID": "ANATR", "ContactDate": "2024-12-01", "Type": "Email"}
+    ]';
+
+SELECT 
+    CustomerID,
+    COUNT(*) AS InteractionCount
+FROM OPENJSON(@CustomerInteractions)
+WITH (
+    CustomerID NVARCHAR(5) '$.CustomerID',
+    ContactDate DATETIME '$.ContactDate',
+    Type NVARCHAR(50) '$.Type'
+)
+GROUP BY CustomerID;
+```
+
+---
+
+Segue o **gabarito completo** para os 10 exercícios avançados que combinam cursores, XML e JSON:
+
+---
+
+### **31. Atualizar preços de produtos a partir de XML e registrar alterações em JSON**
+```sql
+DECLARE @PriceUpdates XML = 
+    '<Categories>
+        <Category>
+            <CategoryID>1</CategoryID>
+            <Adjustment>1.2</Adjustment>
+        </Category>
+        <Category>
+            <CategoryID>2</CategoryID>
+            <Adjustment>0.9</Adjustment>
+        </Category>
+    </Categories>';
+
+DECLARE @CategoryID INT, @Adjustment FLOAT;
+DECLARE @Log NVARCHAR(MAX) = '[]';
+
+DECLARE category_cursor CURSOR FOR
+SELECT 
+    T.C.value('(CategoryID)[1]', 'INT') AS CategoryID,
+    T.C.value('(Adjustment)[1]', 'FLOAT') AS Adjustment
+FROM @PriceUpdates.nodes('/Categories/Category') AS T(C);
+
+OPEN category_cursor;
+FETCH NEXT FROM category_cursor INTO @CategoryID, @Adjustment;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    UPDATE Products
+    SET UnitPrice = UnitPrice * @Adjustment
+    WHERE CategoryID = @CategoryID;
+
+    -- Registrar em JSON
+    SET @Log = JSON_MODIFY(
+        @Log, 
+        'append $', 
+        JSON_QUERY(CONCAT(
+            '{"CategoryID":', @CategoryID, 
+            ',"Adjustment":', @Adjustment, '}'))
+    );
+
+    FETCH NEXT FROM category_cursor INTO @CategoryID, @Adjustment;
+END;
+
+CLOSE category_cursor;
+DEALLOCATE category_cursor;
+
+-- Resultado do log
+SELECT @Log AS UpdateLog;
+```
+
+---
+
+### **32. Converter pedidos para XML e JSON simultaneamente**
+```sql
+-- XML
+SELECT 
+    Orders.OrderID,
+    Orders.OrderDate,
+    (
+        SELECT 
+            [Order Details].ProductID,
+            [Order Details].Quantity
+        FROM [Order Details]
+        WHERE [Order Details].OrderID = Orders.OrderID
+        FOR XML PATH('OrderDetail'), TYPE
+    ) AS OrderDetails
+FROM Orders
+FOR XML PATH('Order'), ROOT('Orders');
+
+-- JSON
+SELECT 
+    Orders.OrderID,
+    Orders.OrderDate,
+    (
+        SELECT 
+            [Order Details].ProductID,
+            [Order Details].Quantity
+        FROM [Order Details]
+        WHERE [Order Details].OrderID = Orders.OrderID
+        FOR JSON AUTO
+    ) AS OrderDetails
+FROM Orders
+FOR JSON AUTO;
+```
+
+---
+
+### **33. Gerar relatório consolidado em XML a partir de interações JSON**
+```sql
+DECLARE @CustomerInteractions NVARCHAR(MAX) = 
+    '[
+        {"CustomerID": "ALFKI", "Type": "Email", "Date": "2024-12-01"},
+        {"CustomerID": "ALFKI", "Type": "Phone", "Date": "2024-12-02"},
+        {"CustomerID": "ANATR", "Type": "Email", "Date": "2024-12-01"}
+    ]';
+
+WITH InteractionData AS (
+    SELECT 
+        JSON_VALUE(Value, '$.CustomerID') AS CustomerID,
+        JSON_VALUE(Value, '$.Type') AS InteractionType,
+        JSON_VALUE(Value, '$.Date') AS InteractionDate
+    FROM OPENJSON(@CustomerInteractions)
+)
+SELECT 
+    CustomerID,
+    (
+        SELECT 
+            InteractionType AS Type,
+            InteractionDate AS Date
+        FROM InteractionData AS Sub
+        WHERE Sub.CustomerID = Main.CustomerID
+        FOR XML PATH('Interaction'), TYPE
+    ) AS Interactions
+FROM InteractionData AS Main
+GROUP BY CustomerID
+FOR XML PATH('Customer'), ROOT('Interactions');
+```
+
+---
+
+### **34. Inserir pedidos de XML e registrar erros em JSON**
+```sql
+DECLARE @OrderXML XML = 
+    '<Orders>
+        <Order>
+            <CustomerID>ALFKI</CustomerID>
+            <OrderDate>2025-01-01</OrderDate>
+            <Details>
+                <ProductID>1</ProductID>
+                <Quantity>5</Quantity>
+                <UnitPrice>20.0</UnitPrice>
+            </Details>
+            <Details>
+                <ProductID>999</ProductID> <!-- Produto inexistente -->
+                <Quantity>3</Quantity>
+                <UnitPrice>15.0</UnitPrice>
+            </Details>
+        </Order>
+    </Orders>';
+
+DECLARE @Log NVARCHAR(MAX) = '[]';
+DECLARE @OrderID INT, @CustomerID NVARCHAR(5), @OrderDate DATE;
+
+DECLARE order_cursor CURSOR FOR
+SELECT 
+    C.value('(CustomerID)[1]', 'NVARCHAR(5)') AS CustomerID,
+    C.value('(OrderDate)[1]', 'DATE') AS OrderDate
+FROM @OrderXML.nodes('/Orders/Order') AS T(C);
+
+OPEN order_cursor;
+FETCH NEXT FROM order_cursor INTO @CustomerID, @OrderDate;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    BEGIN TRY
+        -- Inserir pedido
+        INSERT INTO Orders (CustomerID, OrderDate) 
+        VALUES (@CustomerID, @OrderDate);
+
+        SET @OrderID = SCOPE_IDENTITY();
+
+        -- Processar detalhes
+        INSERT INTO [Order Details] (OrderID, ProductID, Quantity, UnitPrice)
+        SELECT 
+            @OrderID,
+            D.value('(ProductID)[1]', 'INT'),
+            D.value('(Quantity)[1]', 'INT'),
+            D.value('(UnitPrice)[1]', 'MONEY')
+        FROM @OrderXML.nodes('/Orders/Order/Details') AS T(D);
+    END TRY
+    BEGIN CATCH
+        -- Registrar erros
+        SET @Log = JSON_MODIFY(
+            @Log, 
+            'append $', 
+            JSON_QUERY(CONCAT(
+                '{"CustomerID":"', @CustomerID, 
+                '","Error":"', ERROR_MESSAGE(), '"}'))
+        );
+    END CATCH;
+
+    FETCH NEXT FROM order_cursor INTO @CustomerID, @OrderDate;
+END;
+
+CLOSE order_cursor;
+DEALLOCATE order_cursor;
+
+-- Log de erros
+SELECT @Log AS ErrorLog;
+```
+
+---
+
+### **35. Atualizar estoque com XML e registrar ajustes em JSON**
+```sql
+DECLARE @StockAdjustments XML = 
+    '<Adjustments>
+        <Product>
+            <ProductID>1</ProductID>
+            <NewStock>50</NewStock>
+        </Product>
+        <Product>
+            <ProductID>2</ProductID>
+            <NewStock>100</NewStock>
+        </Product>
+    </Adjustments>';
+
+DECLARE @ProductID INT, @NewStock INT;
+DECLARE @Log NVARCHAR(MAX) = '[]';
+
+DECLARE stock_cursor CURSOR FOR
+SELECT 
+    C.value('(ProductID)[1]', 'INT') AS ProductID,
+    C.value('(NewStock)[1]', 'INT') AS NewStock
+FROM @StockAdjustments.nodes('/Adjustments/Product') AS T(C);
+
+OPEN stock_cursor;
+FETCH NEXT FROM stock_cursor INTO @ProductID, @NewStock;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    DECLARE @OldStock INT;
+    SELECT @OldStock = UnitsInStock FROM Products WHERE ProductID = @ProductID;
+
+    UPDATE Products
+    SET UnitsInStock = @NewStock
+    WHERE ProductID = @ProductID;
+
+    -- Registrar ajuste
+    SET @Log = JSON_MODIFY(
+        @Log, 
+        'append $', 
+        JSON_QUERY(CONCAT(
+            '{"ProductID":', @ProductID, 
+            ',"OldStock":', @OldStock, 
+            ',"NewStock":', @NewStock, '}'))
+    );
+
+    FETCH NEXT FROM stock_cursor INTO @ProductID, @NewStock;
+END;
+
+CLOSE stock_cursor;
+DEALLOCATE stock_cursor;
+
+-- Log de ajustes
+SELECT @Log AS StockAdjustmentLog;
+```
+
+---
+
+### **36. Sincronizar dados entre JSON e XML em uma única execução**
+```sql
+DECLARE @CustomerData NVARCHAR(MAX) = 
+    '[{"CustomerID":"ALFKI","CompanyName":"Alfreds Futterkiste"},
+      {"CustomerID":"ANATR","CompanyName":"Ana Trujillo Emparedados"}]';
+
+DECLARE @OrderData XML = 
+    '<Orders>
+        <Order>
+            <OrderID>10248</OrderID>
+            <CustomerID>ALFKI</CustomerID>
+            <OrderDate>2025-01-01</OrderDate>
+        </Order>
+        <Order>
+            <OrderID>10249</OrderID>
+            <CustomerID>ANATR</CustomerID>
+            <OrderDate>2025-01-02</OrderDate>
+        </Order>
+    </Orders>';
+
+-- Sincronizar JSON (Customers)
+MERGE INTO Customers AS Target
+USING OPENJSON(@CustomerData)
+WITH (
+    CustomerID NVARCHAR(5) '$.CustomerID',
+    CompanyName NVARCHAR(50) '$.CompanyName'
+) AS Source
+ON Target.CustomerID = Source.CustomerID
+WHEN MATCHED THEN 
+    UPDATE SET CompanyName = Source.CompanyName
+WHEN NOT MATCHED THEN 
+    INSERT (CustomerID, CompanyName) 
+    VALUES (Source.CustomerID, Source.CompanyName);
+
+-- Sincronizar XML (Orders)
+MERGE INTO Orders AS Target
+USING (
+    SELECT 
+        C.value('(OrderID)[1]', 'INT') AS OrderID,
+        C.value('(CustomerID)[1]', 'NVARCHAR(5)') AS CustomerID,
+        C.value('(OrderDate)[1]', 'DATE') AS OrderDate
+    FROM @OrderData.nodes('/Orders/Order') AS T(C)
+) AS Source
+ON Target.OrderID = Source.OrderID
+WHEN MATCHED THEN 
+    UPDATE SET CustomerID = Source.CustomerID, OrderDate = Source.OrderDate
+WHEN NOT MATCHED THEN 
+    INSERT (OrderID, CustomerID, OrderDate) 
+    VALUES (Source.OrderID, Source.CustomerID, Source.OrderDate);
+```
+
+---
+
+### **37. Converter XML com detalhes de pedidos para JSON agrupado por cliente**
+```sql
+DECLARE @OrderXML XML = 
+    '<Orders>
+        <Order>
+            <CustomerID>ALFKI</CustomerID>
+            <OrderID>10248</OrderID>
+            <ProductID>1</ProductID>
+            <Quantity>10</Quantity>
+        </Order>
+        <Order>
+            <CustomerID>ALFKI</CustomerID>
+            <OrderID>10248</OrderID>
+            <ProductID>2</ProductID>
+            <Quantity>5</Quantity>
+        </Order>
+        <Order>
+            <CustomerID>ANATR</CustomerID>
+            <OrderID>10249</OrderID>
+            <ProductID>1</ProductID>
+            <Quantity>3</Quantity>
+        </Order>
+    </Orders>';
+
+SELECT 
+    CustomerID,
+    JSON_QUERY((
+        SELECT 
+            OrderID,
+            JSON_QUERY((
+                SELECT ProductID, Quantity
+                FROM (
+                    SELECT 
+                        O.value('(ProductID)[1]', 'INT') AS ProductID,
+                        O.value('(Quantity)[1]', 'INT') AS Quantity
+                    FROM @OrderXML.nodes('/Orders/Order') AS Sub(O)
+                    WHERE Sub.O.value('(OrderID)[1]', 'INT') = Orders.OrderID
+                ) AS Products
+                FOR JSON AUTO
+            )) AS Products
+        FROM (
+            SELECT DISTINCT 
+                O.value('(OrderID)[1]', 'INT') AS OrderID
+            FROM @OrderXML.nodes('/Orders/Order') AS Sub(O)
+        ) AS Orders
+        FOR JSON AUTO
+    )) AS Orders
+FROM (
+    SELECT DISTINCT 
+        O.value('(CustomerID)[1]', 'NVARCHAR(5)') AS CustomerID
+    FROM @OrderXML.nodes('/Orders/Order') AS O
+) AS Customers
+FOR JSON AUTO;
+```
+
+---
+
+### **38. Validar e corrigir inconsistências entre JSON e XML usando cursores**
+```sql
+DECLARE @ProductJSON NVARCHAR(MAX) = 
+    '[{"ProductID":1,"ProductName":"Chai","Stock":39},
+      {"ProductID":2,"ProductName":"Chang","Stock":17}]';
+
+DECLARE @ProductXML XML = 
+    '<Products>
+        <Product>
+            <ProductID>1</ProductID>
+            <ProductName>Chai</ProductName>
+            <Stock>40</Stock>
+        </Product>
+        <Product>
+            <ProductID>3</ProductID>
+            <ProductName>New Product</ProductName>
+            <Stock>25</Stock>
+        </Product>
+    </Products>';
+
+DECLARE @ProductID INT, @JSONStock INT, @XMLStock INT;
+
+DECLARE product_cursor CURSOR FOR
+SELECT 
+    JSONData.ProductID,
+    JSONData.Stock AS JSONStock,
+    XMLData.Stock AS XMLStock
+FROM 
+    OPENJSON(@ProductJSON)
+    WITH (
+        ProductID INT '$.ProductID',
+        ProductName NVARCHAR(50) '$.ProductName',
+        Stock INT '$.Stock'
+    ) AS JSONData
+LEFT JOIN (
+    SELECT 
+        C.value('(ProductID)[1]', 'INT') AS ProductID,
+        C.value('(Stock)[1]', 'INT') AS Stock
+    FROM @ProductXML.nodes('/Products/Product') AS T(C)
+) AS XMLData
+ON JSONData.ProductID = XMLData.ProductID;
+
+OPEN product_cursor;
+FETCH NEXT FROM product_cursor INTO @ProductID, @JSONStock, @XMLStock;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    IF @JSONStock IS NULL OR @XMLStock IS NULL OR @JSONStock <> @XMLStock
+    BEGIN
+        -- Corrigir inconsistências
+        UPDATE Products
+        SET UnitsInStock = ISNULL(@XMLStock, @JSONStock)
+        WHERE ProductID = @ProductID;
+    END;
+
+    FETCH NEXT FROM product_cursor INTO @ProductID, @JSONStock, @XMLStock;
+END;
+
+CLOSE product_cursor;
+DEALLOCATE product_cursor;
+```
+
+---
+
+### **39. Criar log de operações de atualização em JSON e consolidar em XML**
+```sql
+DECLARE @Log NVARCHAR(MAX) = 
+    '[{"Operation":"Update","Table":"Products","ProductID":1,"OldValue":39,"NewValue":40},
+      {"Operation":"Insert","Table":"Orders","OrderID":10250}]';
+
+SELECT 
+    Operation,
+    (
+        SELECT TableName, Details
+        FROM (
+            SELECT 
+                JSON_VALUE(Value, '$.Table') AS TableName,
+                JSON_QUERY(Value, '$') AS Details
+            FROM OPENJSON(@Log)
+        ) AS Operations
+        FOR XML PATH('Operation'), TYPE
+    ) AS OperationDetails
+FROM (
+    SELECT DISTINCT JSON_VALUE(Value, '$.Operation') AS Operation
+    FROM OPENJSON(@Log)
+) AS LogData
+FOR XML PATH('Operations'), ROOT('Log');
+```
+
+---
+
+### **40. Migrar estrutura XML para JSON e manter sincronização bidirecional**
+```sql
+DECLARE @ProductXML XML = 
+    '<Products>
+        <Product>
+            <ProductID>1</ProductID>
+            <ProductName>Chai</ProductName>
+            <Stock>40</Stock>
+        </Product>
+        <Product>
+            <ProductID>2</ProductID>
+            <ProductName>Chang</ProductName>
+            <Stock>17</Stock>
+        </Product>
+    </Products>';
+
+-- Migrar para JSON
+SELECT 
+    ProductID,
+    ProductName,
+    Stock
+FROM (
+    SELECT 
+        C.value('(ProductID)[1]', 'INT') AS ProductID,
+        C.value('(ProductName)[1]', 'NVARCHAR(50)') AS ProductName,
+        C.value('(Stock)[1]', 'INT') AS Stock
+    FROM @ProductXML.nodes('/Products/Product') AS T(C)
+) AS ProductData
+FOR JSON AUTO;
+
+-- Sincronizar alterações (simulação de bidirecionalidade)
+MERGE INTO Products AS Target
+USING (
+    SELECT 
+        C.value('(ProductID)[1]', 'INT') AS ProductID,
+        C.value('(ProductName)[1]', 'NVARCHAR(50)') AS ProductName,
+        C.value('(Stock)[1]', 'INT') AS Stock
+    FROM @ProductXML.nodes('/Products/Product') AS T(C)
+) AS Source
+ON Target.ProductID = Source.ProductID
+WHEN MATCHED THEN 
+    UPDATE SET ProductName = Source.ProductName, UnitsInStock = Source.Stock
+WHEN NOT MATCHED THEN 
+    INSERT (ProductID, ProductName, UnitsInStock)
+    VALUES (Source.ProductID, Source.ProductName, Source.Stock);
+```
+
+---

@@ -1,0 +1,136 @@
+
+### 1–10: Introdução às Funções de Janela Básicas
+1. Liste os funcionários com o total acumulado de pedidos classificados por data.
+2. Calcule a média móvel dos valores dos pedidos nos últimos 3 pedidos para cada cliente.
+3. Exiba os produtos com a soma acumulada de vendas, ordenados por categoria.
+4. Liste os produtos com o percentual de contribuição em vendas dentro de sua categoria.
+5. Calcule o número de pedidos realizados por cada cliente usando a função `COUNT()`.
+6. Calcule a data do primeiro pedido de cada cliente usando `MIN()` com janela.
+7. Liste os pedidos com o valor médio de pedido por cliente usando `AVG()`.
+8. Determine a diferença entre o valor de um pedido e o valor médio dos pedidos daquele cliente.
+9. Exiba os produtos com o ranking de vendas dentro de cada categoria usando `RANK()`.
+10. Liste os pedidos com o total acumulado diário para cada cliente.
+
+---
+
+### 11–20: Ordenação e Particionamento
+11. Liste os produtos mais vendidos em cada categoria usando `DENSE_RANK()`.
+12. Calcule a diferença entre o maior e o menor valor de pedido por cliente.
+13. Liste os clientes com a média acumulada de pedidos, ordenados por data.
+14. Exiba os funcionários com a soma acumulada de vendas, particionados por região.
+15. Liste os pedidos com a classificação reversa (`DESC`) por valor de pedido usando `ROW_NUMBER()`.
+16. Liste os 3 produtos mais vendidos em cada categoria usando `TOP` com janela.
+17. Calcule a diferença percentual entre vendas de meses consecutivos.
+18. Exiba os clientes com o ranking de pedidos feitos em cada ano.
+19. Liste os funcionários com o total acumulado de vendas por ano, usando `PARTITION BY YEAR(OrderDate)`.
+20. Calcule a média móvel de vendas para cada produto nos últimos 5 meses.
+
+---
+
+### 21–30: Aplicações Avançadas com `LAG` e `LEAD`
+21. Identifique o cliente que fez o próximo pedido usando `LEAD()`.
+22. Determine a diferença entre o valor de um pedido e o próximo pedido do mesmo cliente.
+23. Liste os produtos com o estoque atual e o estoque do mês anterior usando `LAG()`.
+24. Calcule a diferença entre o preço atual e o preço anterior de cada produto.
+25. Liste os pedidos com o próximo valor de pedido do mesmo cliente.
+26. Calcule o crescimento percentual do valor de vendas mês a mês.
+27. Exiba os clientes com o valor do pedido anterior e a diferença para o pedido atual.
+28. Liste os produtos com a próxima data de envio programada.
+29. Calcule o tempo médio entre os pedidos usando `DATEDIFF()` com funções de janela.
+30. Determine os pedidos em que o valor é maior que o pedido anterior.
+
+---
+
+### 31–40: Análises Temporais
+31. Calcule a média móvel de vendas nos últimos 12 meses.
+32. Liste os funcionários com o total de vendas no trimestre atual e anterior.
+33. Calcule a soma acumulada de pedidos em um intervalo de 30 dias.
+34. Determine o primeiro e o último pedido de cada cliente por ano.
+35. Liste os produtos com a média de vendas por estação (primavera, verão, etc.).
+36. Calcule o total acumulado de vendas em um intervalo deslizante de 7 dias.
+37. Liste os pedidos com o ranking de vendas semanais por cliente.
+38. Exiba os funcionários com a soma acumulada de vendas no trimestre atual.
+39. Calcule o valor total de vendas por trimestre em comparação ao trimestre anterior.
+40. Liste os pedidos com o total acumulado de vendas mensais.
+
+---
+
+### 41–50: Uso de Funções Percentuais
+41. Calcule o percentil de cada pedido em relação às vendas totais.
+42. Liste os produtos que estão acima do percentil 90% de vendas em sua categoria.
+43. Exiba os funcionários com o percentil de contribuição em vendas por região.
+44. Calcule a diferença percentual entre os dois pedidos mais altos de cada cliente.
+45. Liste os pedidos com o ranking percentual (`PERCENT_RANK()`) por cliente.
+46. Calcule o valor médio de pedidos acima do percentil 50% por categoria.
+47. Exiba os produtos com a classificação percentual (`CUME_DIST()`) em vendas.
+48. Liste os funcionários com as vendas no top 10% de sua região.
+49. Calcule a média de vendas de pedidos abaixo do percentil 25%.
+50. Liste os pedidos com o percentual de contribuição em relação ao cliente.
+
+---
+
+### 51–60: Operações com Subconjuntos
+51. Liste os produtos com o valor de vendas acumulado dentro do top 10%.
+52. Exiba os clientes com a soma acumulada de pedidos no trimestre atual.
+53. Calcule o total de pedidos acima da média por cliente.
+54. Determine o ranking de produtos vendidos apenas na categoria "Beverages".
+55. Liste os pedidos de clientes que compraram mais de 5 produtos.
+56. Calcule a soma acumulada de vendas dentro do top 3 clientes de cada região.
+57. Liste os produtos mais vendidos no último mês de cada ano.
+58. Calcule a média de vendas para os 5 produtos mais vendidos em cada categoria.
+59. Liste os funcionários com o maior total de vendas em um ano específico.
+60. Calcule o valor acumulado de pedidos apenas para clientes VIP.
+
+---
+
+### 61–70: Trabalhando com Agrupamentos Complexos
+61. Liste os funcionários com a soma acumulada de vendas por região e ano.
+62. Calcule o total de vendas por cliente e produto usando funções de janela.
+63. Liste os pedidos com o total acumulado por mês e categoria.
+64. Calcule o percentual acumulado de vendas dentro de cada região.
+65. Liste os produtos com a média de vendas dentro de cada subcategoria.
+66. Determine os clientes com o maior crescimento percentual em vendas por ano.
+67. Liste os funcionários com o ranking de vendas dentro de sua categoria de produto.
+68. Exiba os pedidos com o total acumulado de vendas por trimestre e cliente.
+69. Calcule a média de vendas para os pedidos feitos no mesmo mês.
+70. Liste os produtos com o ranking de vendas acumulado dentro de sua região.
+
+---
+
+### 71–80: Aplicações com Combinações de Janela
+71. Liste os funcionários com a soma acumulada e a média móvel de vendas.
+72. Calcule o ranking de produtos dentro de um intervalo móvel de 6 meses.
+73. Liste os pedidos com a soma acumulada e o ranking por valor.
+74. Calcule o percentual acumulado e a média de vendas por categoria.
+75. Liste os produtos com a média móvel e o ranking dentro de sua categoria.
+76. Determine os clientes com o total acumulado de pedidos e a diferença percentual entre anos.
+77. Liste os funcionários com a média móvel trimestral de vendas e o ranking dentro da região.
+78. Calcule o percentual de contribuição de vendas acumuladas por cliente.
+79. Liste os pedidos com o valor acumulado e o ranking reverso por data.
+80. Determine os produtos com a soma acumulada e a média de vendas dentro de um intervalo de 90 dias.
+
+---
+
+### 81–100: Cenários Reais
+81. Calcule a margem acumulada de lucro por produto e região.
+82. Liste os produtos com a soma acumulada de estoque dentro de cada categoria.
+83. Exiba os pedidos com a média móvel de valor dentro de um intervalo de 15 dias.
+84. Calcule o percentual acumulado de vendas por produto em um ano específico.
+85. Liste os funcionários com o ranking de vendas dentro de cada ano.
+86. Calcule a diferença acumulada entre pedidos consecutivos por cliente.
+87. Liste os produtos com a média de vendas acima do percentil 75% em sua categoria.
+88. Determine o primeiro pedido de cada cliente em um trimestre específico.
+89. Liste os funcionários com a soma acumulada de vendas e o ranking por mês.
+90. Calcule o crescimento percentual de vendas entre trimestres consecutivos.
+91. Liste os pedidos com o ranking de valor dentro de uma janela de 3 meses.
+92. Calcule a média de vendas para os 5 produtos mais vendidos por região.
+93. Liste os funcionários com o percentual acumulado de vendas em cada ano.
+94. Determine os produtos com a soma acumulada de vendas dentro de cada faixa de preço.
+95. Liste os pedidos com a média móvel e o ranking dentro de cada região.
+96. Calcule a média de vendas para pedidos realizados no mesmo dia da semana.
+97. Liste os clientes com a soma acumulada de pedidos no último trimestre.
+98. Determine os produtos com o valor acumulado e a média de vendas dentro de cada subcategoria.
+99. Liste os funcionários com o ranking e o percentual de vendas acumuladas por trimestre.
+100. Calcule o total acumulado e o percentual de crescimento em vendas dentro de cada categoria.
+
+---

@@ -1,0 +1,255 @@
+Aqui está o gabarito com as implementações de cada exercício usando o banco **Northwind**. 
+
+---
+
+### **1. Procedure com parâmetros de entrada e saída**
+
+```sql
+CREATE PROCEDURE GetEmployeeOrderCount 
+    @EmployeeName NVARCHAR(100),
+    @OrderCount INT OUTPUT
+AS
+BEGIN
+    SELECT @OrderCount = COUNT(*)
+    FROM Orders O
+    INNER JOIN Employees E ON O.EmployeeID = E.EmployeeID
+    WHERE E.FirstName + ' ' + E.LastName = @EmployeeName;
+END;
+```
+
+---
+
+### **2. Procedure com lógica condicional**
+
+```sql
+CREATE PROCEDURE UpdateOrderShippedDate 
+    @OrderID INT
+AS
+BEGIN
+    IF EXISTS (SELECT 1 FROM Orders WHERE OrderID = @OrderID AND ShippedDate IS NOT NULL)
+    BEGIN
+        PRINT 'O pedido já foi entregue.'
+    END
+    ELSE
+    BEGIN
+        UPDATE Orders
+        SET ShippedDate = GETDATE()
+        WHERE OrderID = @OrderID;
+
+        PRINT 'A data de entrega foi atualizada para hoje.'
+    END
+END;
+```
+
+---
+
+### **3. Procedure com tabelas temporárias**
+
+```sql
+CREATE PROCEDURE SalesReportByYear 
+    @Year INT
+AS
+BEGIN
+    CREATE TABLE #TempSalesReport (
+        ProductName NVARCHAR(100),
+        TotalSales MONEY
+    );
+
+    INSERT INTO #TempSalesReport
+    SELECT 
+        P.ProductName,
+        SUM(OD.UnitPrice * OD.Quantity) AS TotalSales
+    FROM [Order Details] OD
+    INNER JOIN Products P ON OD.ProductID = P.ProductID
+    INNER JOIN Orders O ON OD.OrderID = O.OrderID
+    WHERE YEAR(O.OrderDate) = @Year
+    GROUP BY P.ProductName;
+
+    SELECT * FROM #TempSalesReport;
+
+    DROP TABLE #TempSalesReport;
+END;
+```
+
+---
+
+### **4. Procedure que utiliza transações**
+
+```sql
+CREATE PROCEDURE UpdateProductPrices 
+    @CategoryID INT,
+    @PercentageIncrease FLOAT
+AS
+BEGIN
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        UPDATE Products
+        SET UnitPrice = UnitPrice * (1 + @PercentageIncrease / 100)
+        WHERE CategoryID = @CategoryID;
+
+        COMMIT TRANSACTION;
+        PRINT 'Preços atualizados com sucesso.';
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        PRINT 'Ocorreu um erro ao atualizar os preços.';
+    END CATCH;
+END;
+```
+
+---
+
+### **5. Procedure com loop**
+
+```sql
+CREATE PROCEDURE CalculateMonthlySales
+AS
+BEGIN
+    DECLARE @Month INT = 1;
+    DECLARE @Year INT = YEAR(GETDATE()) - 1;
+
+    WHILE @Month <= 12
+    BEGIN
+        PRINT 'Processando o mês: ' + CAST(@Month AS NVARCHAR);
+
+        SELECT 
+            E.FirstName + ' ' + E.LastName AS EmployeeName,
+            SUM(OD.UnitPrice * OD.Quantity) AS MonthlySales
+        FROM [Order Details] OD
+        INNER JOIN Orders O ON OD.OrderID = O.OrderID
+        INNER JOIN Employees E ON O.EmployeeID = E.EmployeeID
+        WHERE MONTH(O.OrderDate) = @Month AND YEAR(O.OrderDate) = @Year
+        GROUP BY E.FirstName, E.LastName;
+
+        SET @Month = @Month + 1;
+    END;
+END;
+```
+
+---
+
+### **6. Procedure com dynamic SQL**
+
+```sql
+CREATE PROCEDURE GetTopValues 
+    @TableName NVARCHAR(100),
+    @ColumnName NVARCHAR(100)
+AS
+BEGIN
+    DECLARE @SQL NVARCHAR(MAX);
+    SET @SQL = '
+        SELECT TOP 5 ' + @ColumnName + ' 
+        FROM ' + @TableName + '
+        ORDER BY ' + @ColumnName + ' DESC';
+
+    EXEC sp_executesql @SQL;
+END;
+```
+
+---
+
+### **7. Procedure que gera logs**
+
+```sql
+CREATE PROCEDURE InsertOrderWithLog
+    @CustomerID NCHAR(5),
+    @EmployeeID INT,
+    @OrderDate DATETIME,
+    @RequiredDate DATETIME,
+    @ShippedDate DATETIME
+AS
+BEGIN
+    DECLARE @OrderID INT;
+
+    INSERT INTO Orders (CustomerID, EmployeeID, OrderDate, RequiredDate, ShippedDate)
+    VALUES (@CustomerID, @EmployeeID, @OrderDate, @RequiredDate, @ShippedDate);
+
+    SET @OrderID = SCOPE_IDENTITY();
+
+    INSERT INTO Logs (LogMessage, LogDate)
+    VALUES ('Novo pedido inserido: ' + CAST(@OrderID AS NVARCHAR), GETDATE());
+END;
+```
+
+---
+
+### **8. Procedure com CTEs**
+
+```sql
+CREATE PROCEDURE GetCustomerPurchases
+    @CustomerID NCHAR(5)
+AS
+BEGIN
+    WITH ProductPurchases AS (
+        SELECT 
+            P.ProductName,
+            SUM(OD.Quantity) AS TotalQuantity
+        FROM [Order Details] OD
+        INNER JOIN Orders O ON OD.OrderID = O.OrderID
+        INNER JOIN Products P ON OD.ProductID = P.ProductID
+        WHERE O.CustomerID = @CustomerID
+        GROUP BY P.ProductName
+    )
+    SELECT * FROM ProductPurchases;
+END;
+```
+
+---
+
+### **9. Procedure com manipulação de XML**
+
+```sql
+CREATE PROCEDURE UpdateStockFromXML
+    @ProductList XML
+AS
+BEGIN
+    DECLARE @ProductID INT;
+
+    DECLARE CursorProducts CURSOR FOR
+    SELECT Product.value('.', 'INT')
+    FROM @ProductList.nodes('/Products/Product') AS X(Product);
+
+    OPEN CursorProducts;
+
+    FETCH NEXT FROM CursorProducts INTO @ProductID;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        UPDATE Products
+        SET UnitsInStock = UnitsInStock + 10
+        WHERE ProductID = @ProductID;
+
+        FETCH NEXT FROM CursorProducts INTO @ProductID;
+    END;
+
+    CLOSE CursorProducts;
+    DEALLOCATE CursorProducts;
+END;
+```
+
+---
+
+### **10. Procedure que utiliza tabelas de retorno**
+
+```sql
+CREATE PROCEDURE GetTopCustomers 
+    @StartDate DATETIME,
+    @EndDate DATETIME
+AS
+BEGIN
+    SELECT TOP 5 
+        C.ContactName,
+        SUM(OD.UnitPrice * OD.Quantity) AS TotalSpent
+    FROM [Order Details] OD
+    INNER JOIN Orders O ON OD.OrderID = O.OrderID
+    INNER JOIN Customers C ON O.CustomerID = C.CustomerID
+    WHERE O.OrderDate BETWEEN @StartDate AND @EndDate
+    GROUP BY C.ContactName
+    ORDER BY TotalSpent DESC;
+END;
+```
+
+---
+
+Se precisar de ajuda para testar ou ajustar essas procedures, é só me avisar!

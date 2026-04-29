@@ -1,0 +1,935 @@
+-- **1. Inserção Condicional em Tabelas**
+INSERT INTO Products (ProductName, SupplierID, CategoryID, UnitPrice)
+SELECT np.ProductName, np.SupplierID, np.CategoryID, np.UnitPrice
+FROM #NovosProdutos np
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM Products p
+    WHERE p.ProductName = np.ProductName
+);
+
+-- **2. Atualização em Lote**
+UPDATE p
+SET UnitPrice = UnitPrice * 1.10
+FROM Products p
+JOIN Categories c ON p.CategoryID = c.CategoryID
+WHERE c.CategoryName = 'Seafood' AND p.Discontinued = 0;
+
+-- **3. Remoção com Subconsulta**
+DELETE od
+FROM [Order Details] od
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM Orders o
+    WHERE o.OrderID = od.OrderID AND o.OrderDate >= DATEADD(YEAR, -2, GETDATE())
+);
+
+-- **4. Join com Atualização**
+UPDATE o
+SET ShippedDate = GETDATE()
+FROM Orders o
+JOIN [Order Details] od ON o.OrderID = od.OrderID
+WHERE o.Status = 'Shipped' AND o.ShippedDate IS NULL;
+
+-- **5. Inserção com Subconsulta**
+INSERT INTO [Order Details] (OrderID, ProductID, Quantity, UnitPrice)
+SELECT TOP 1 
+    (SELECT MAX(OrderID) FROM Orders),
+    ProductID,
+    10,
+    UnitPrice
+FROM [Order Details]
+WHERE OrderDate >= DATEADD(YEAR, -1, GETDATE())
+ORDER BY SUM(Quantity) DESC;
+
+-- **6. Transação com Controle de Erros**
+BEGIN TRANSACTION;
+BEGIN TRY
+    INSERT INTO Suppliers (CompanyName, ContactName, ContactTitle)
+    VALUES ('New Supplier', 'John Doe', 'Manager');
+
+    DECLARE @SupplierID INT = SCOPE_IDENTITY();
+
+    INSERT INTO Products (ProductName, SupplierID, CategoryID, UnitPrice)
+    VALUES ('New Product', @SupplierID, 1, 50.00);
+
+    COMMIT;
+END TRY
+BEGIN CATCH
+    ROLLBACK;
+    THROW;
+END CATCH;
+
+-- **7. Manipulação de Hierarquias**
+WITH ProductPriceCTE AS (
+    SELECT 
+        p.ProductID, 
+        p.UnitPrice, 
+        AVG(p.UnitPrice) OVER (PARTITION BY p.CategoryID) AS AvgCategoryPrice
+    FROM Products p
+)
+UPDATE od
+SET Discount = Discount * 2
+FROM [Order Details] od
+JOIN ProductPriceCTE pcte ON od.ProductID = pcte.ProductID
+WHERE pcte.UnitPrice > pcte.AvgCategoryPrice;
+
+-- **8. Deleção com Join**
+DELETE c
+FROM Customers c
+LEFT JOIN Orders o ON c.CustomerID = o.CustomerID
+WHERE o.OrderID IS NULL;
+
+-- **9. Consulta e Atualização de Dados Não Correspondentes**
+UPDATE s
+SET CompanyName = '[Inactive] ' + s.CompanyName
+FROM Suppliers s
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM Products p
+    WHERE p.SupplierID = s.SupplierID AND p.Discontinued = 0
+);
+
+-- **10. Inserção em Cascata**
+CREATE TRIGGER trg_InsertOrderDetails
+ON Orders
+AFTER INSERT
+AS
+BEGIN
+    INSERT INTO [Order Details] (OrderID, ProductID, Quantity, UnitPrice)
+    SELECT i.OrderID, 1, 5, (SELECT UnitPrice FROM Products WHERE ProductID = 1)
+    FROM Inserted i;
+END;
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Segue o gabarito detalhado para os exercícios de **procedures** com **cursores** no banco **Northwind**.
+
+---
+
+### **1. Cursor para Atualizar Preços por Categoria**
+```sql
+CREATE PROCEDURE UpdateProductPricesByCategory
+    @PercentageIncrease DECIMAL(5, 2)
+AS
+BEGIN
+    DECLARE @CategoryID INT;
+
+    DECLARE CategoryCursor CURSOR FOR
+    SELECT CategoryID FROM Categories;
+
+    OPEN CategoryCursor;
+    FETCH NEXT FROM CategoryCursor INTO @CategoryID;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        UPDATE Products
+        SET UnitPrice = UnitPrice * (1 + @PercentageIncrease / 100)
+        WHERE CategoryID = @CategoryID;
+
+        FETCH NEXT FROM CategoryCursor INTO @CategoryID;
+    END;
+
+    CLOSE CategoryCursor;
+    DEALLOCATE CategoryCursor;
+END;
+```
+
+---
+
+### **2. Inserção em Massa com Cursor**
+```sql
+CREATE PROCEDURE InsertProductsInCategories
+AS
+BEGIN
+    DECLARE @ProductName NVARCHAR(50), @SupplierID INT, @CategoryID INT, @UnitPrice DECIMAL(10, 2);
+
+    DECLARE ProductCursor CURSOR FOR
+    SELECT ProductName, SupplierID, CategoryID, UnitPrice FROM #TemporaryProducts;
+
+    OPEN ProductCursor;
+    FETCH NEXT FROM ProductCursor INTO @ProductName, @SupplierID, @CategoryID, @UnitPrice;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        INSERT INTO Products (ProductName, SupplierID, CategoryID, UnitPrice)
+        VALUES (@ProductName, @SupplierID, @CategoryID, @UnitPrice);
+
+        FETCH NEXT FROM ProductCursor INTO @ProductName, @SupplierID, @CategoryID, @UnitPrice;
+    END;
+
+    CLOSE ProductCursor;
+    DEALLOCATE ProductCursor;
+END;
+```
+
+---
+
+### **3. Atualização Condicional com Cursor**
+```sql
+CREATE PROCEDURE UpdateFreightForBrazil
+AS
+BEGIN
+    DECLARE @OrderID INT, @Freight DECIMAL(10, 2);
+
+    DECLARE OrderCursor CURSOR FOR
+    SELECT OrderID, Freight FROM Orders o
+    JOIN Customers c ON o.CustomerID = c.CustomerID
+    WHERE c.Country = 'Brazil';
+
+    OPEN OrderCursor;
+    FETCH NEXT FROM OrderCursor INTO @OrderID, @Freight;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        UPDATE Orders
+        SET Freight = @Freight * 2
+        WHERE OrderID = @OrderID;
+
+        FETCH NEXT FROM OrderCursor INTO @OrderID, @Freight;
+    END;
+
+    CLOSE OrderCursor;
+    DEALLOCATE OrderCursor;
+END;
+```
+
+---
+
+### **4. Exclusão com Cursor**
+```sql
+CREATE PROCEDURE DeleteDiscontinuedProducts
+AS
+BEGIN
+    DECLARE @ProductID INT;
+
+    DECLARE ProductCursor CURSOR FOR
+    SELECT ProductID FROM Products
+    WHERE Discontinued = 1 AND ProductID NOT IN (
+        SELECT DISTINCT ProductID FROM [Order Details]
+        WHERE OrderID IN (SELECT OrderID FROM Orders WHERE OrderDate >= DATEADD(YEAR, -5, GETDATE()))
+    );
+
+    OPEN ProductCursor;
+    FETCH NEXT FROM ProductCursor INTO @ProductID;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        DELETE FROM Products WHERE ProductID = @ProductID;
+
+        FETCH NEXT FROM ProductCursor INTO @ProductID;
+    END;
+
+    CLOSE ProductCursor;
+    DEALLOCATE ProductCursor;
+END;
+```
+
+---
+
+### **5. Processamento de Descontos com Cursor**
+```sql
+CREATE PROCEDURE ApplyProgressiveDiscounts
+AS
+BEGIN
+    DECLARE @OrderID INT, @ProductID INT, @Quantity INT;
+
+    DECLARE OrderDetailCursor CURSOR FOR
+    SELECT OrderID, ProductID, Quantity FROM [Order Details]
+    WHERE Quantity > 5;
+
+    OPEN OrderDetailCursor;
+    FETCH NEXT FROM OrderDetailCursor INTO @OrderID, @ProductID, @Quantity;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        UPDATE [Order Details]
+        SET Discount = CASE
+            WHEN @Quantity BETWEEN 6 AND 10 THEN 0.10
+            WHEN @Quantity BETWEEN 11 AND 20 THEN 0.15
+            ELSE 0.20
+        END
+        WHERE OrderID = @OrderID AND ProductID = @ProductID;
+
+        FETCH NEXT FROM OrderDetailCursor INTO @OrderID, @ProductID, @Quantity;
+    END;
+
+    CLOSE OrderDetailCursor;
+    DEALLOCATE OrderDetailCursor;
+END;
+```
+
+---
+
+### **6. Gerenciamento de Estoque**
+```sql
+CREATE PROCEDURE GenerateRestockEntries
+AS
+BEGIN
+    DECLARE @ProductID INT, @UnitsInStock INT;
+
+    DECLARE StockCursor CURSOR FOR
+    SELECT ProductID, UnitsInStock FROM Products
+    WHERE UnitsInStock < 10;
+
+    OPEN StockCursor;
+    FETCH NEXT FROM StockCursor INTO @ProductID, @UnitsInStock;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        INSERT INTO RestockLog (ProductID, QuantityNeeded, RestockDate)
+        VALUES (@ProductID, 10 - @UnitsInStock, GETDATE());
+
+        FETCH NEXT FROM StockCursor INTO @ProductID, @UnitsInStock;
+    END;
+
+    CLOSE StockCursor;
+    DEALLOCATE StockCursor;
+END;
+```
+
+---
+
+### **7. Envio de Notificações por Cursor**
+```sql
+CREATE PROCEDURE NotifyInactiveCustomers
+AS
+BEGIN
+    DECLARE @CustomerID NVARCHAR(5);
+
+    DECLARE CustomerCursor CURSOR FOR
+    SELECT CustomerID FROM Customers
+    WHERE CustomerID NOT IN (
+        SELECT DISTINCT CustomerID FROM Orders
+        WHERE OrderDate >= DATEADD(YEAR, -2, GETDATE())
+    );
+
+    OPEN CustomerCursor;
+    FETCH NEXT FROM CustomerCursor INTO @CustomerID;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        INSERT INTO Notifications (CustomerID, Message, Date)
+        VALUES (@CustomerID, 'You have been inactive for 2 years.', GETDATE());
+
+        FETCH NEXT FROM CustomerCursor INTO @CustomerID;
+    END;
+
+    CLOSE CustomerCursor;
+    DEALLOCATE CustomerCursor;
+END;
+```
+
+---
+
+### **8. Cálculo de Receita por Produto**
+```sql
+CREATE PROCEDURE CalculateProductRevenue
+AS
+BEGIN
+    DECLARE @ProductID INT, @Revenue DECIMAL(10, 2);
+
+    DECLARE ProductCursor CURSOR FOR
+    SELECT ProductID FROM Products;
+
+    OPEN ProductCursor;
+    FETCH NEXT FROM ProductCursor INTO @ProductID;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @Revenue = (SELECT SUM(UnitPrice * Quantity) FROM [Order Details] WHERE ProductID = @ProductID);
+
+        INSERT INTO ProductRevenue (ProductID, Revenue, CalculatedDate)
+        VALUES (@ProductID, @Revenue, GETDATE());
+
+        FETCH NEXT FROM ProductCursor INTO @ProductID;
+    END;
+
+    CLOSE ProductCursor;
+    DEALLOCATE ProductCursor;
+END;
+```
+
+---
+
+### **9. Transferência de Dados por Cursor**
+```sql
+CREATE PROCEDURE BackupSupplierProducts
+    @SupplierID INT
+AS
+BEGIN
+    DECLARE @ProductID INT, @ProductName NVARCHAR(50), @UnitPrice DECIMAL(10, 2);
+
+    DECLARE ProductCursor CURSOR FOR
+    SELECT ProductID, ProductName, UnitPrice FROM Products WHERE SupplierID = @SupplierID;
+
+    OPEN ProductCursor;
+    FETCH NEXT FROM ProductCursor INTO @ProductID, @ProductName, @UnitPrice;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        INSERT INTO ProductBackup (ProductID, ProductName, UnitPrice, BackupDate)
+        VALUES (@ProductID, @ProductName, @UnitPrice, GETDATE());
+
+        FETCH NEXT FROM ProductCursor INTO @ProductID, @ProductName, @UnitPrice;
+    END;
+
+    CLOSE ProductCursor;
+    DEALLOCATE ProductCursor;
+END;
+```
+
+---
+
+### **10. Atualização de Fretes com Base no Peso**
+```sql
+CREATE PROCEDURE UpdateFreightByWeight
+AS
+BEGIN
+    DECLARE @OrderID INT, @TotalWeight DECIMAL(10, 2);
+
+    DECLARE OrderCursor CURSOR FOR
+    SELECT o.OrderID, SUM(p.Weight * od.Quantity) AS TotalWeight
+    FROM Orders o
+    JOIN [Order Details] od ON o.OrderID = od.OrderID
+    JOIN Products p ON od.ProductID = p.ProductID
+    GROUP BY o.OrderID;
+
+    OPEN OrderCursor;
+    FETCH NEXT FROM OrderCursor INTO @OrderID, @TotalWeight;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        UPDATE Orders
+        SET Freight = @TotalWeight * 0.5
+        WHERE OrderID = @OrderID;
+
+        FETCH NEXT FROM OrderCursor INTO @OrderID, @TotalWeight;
+    END;
+
+    CLOSE OrderCursor;
+    DEALLOCATE OrderCursor;
+END;
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Segue o **gabarito** detalhado para os exercícios propostos, que combinam cursores, transações e tratamento de erros no banco **Northwind**.
+
+---
+
+### **1. Inserção Segura com Cursores e Transação**
+```sql
+CREATE PROCEDURE InsertDiscontinuedProducts
+AS
+BEGIN
+    DECLARE @ProductID INT, @ProductName NVARCHAR(50), @UnitPrice DECIMAL(10, 2);
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        DECLARE DiscontinuedCursor CURSOR FOR
+        SELECT ProductID, ProductName, UnitPrice FROM Products WHERE Discontinued = 1;
+
+        OPEN DiscontinuedCursor;
+        FETCH NEXT FROM DiscontinuedCursor INTO @ProductID, @ProductName, @UnitPrice;
+
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            INSERT INTO DiscontinuedProducts (ProductID, ProductName, UnitPrice, DiscontinuedDate)
+            VALUES (@ProductID, @ProductName, @UnitPrice, GETDATE());
+
+            FETCH NEXT FROM DiscontinuedCursor INTO @ProductID, @ProductName, @UnitPrice;
+        END;
+
+        CLOSE DiscontinuedCursor;
+        DEALLOCATE DiscontinuedCursor;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+
+        IF CURSOR_STATUS('GLOBAL', 'DiscontinuedCursor') >= 0
+        BEGIN
+            CLOSE DiscontinuedCursor;
+            DEALLOCATE DiscontinuedCursor;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+```
+
+---
+
+### **2. Atualização de Preços com Controle de Erros**
+```sql
+CREATE PROCEDURE UpdatePricesByCategory
+AS
+BEGIN
+    DECLARE @CategoryID INT, @ProductID INT;
+
+    DECLARE CategoryCursor CURSOR FOR
+    SELECT DISTINCT CategoryID FROM Categories;
+
+    OPEN CategoryCursor;
+
+    FETCH NEXT FROM CategoryCursor INTO @CategoryID;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        BEGIN TRANSACTION;
+
+        BEGIN TRY
+            UPDATE Products
+            SET UnitPrice = UnitPrice * 1.05
+            WHERE CategoryID = @CategoryID;
+
+            COMMIT TRANSACTION;
+        END TRY
+        BEGIN CATCH
+            ROLLBACK TRANSACTION;
+            -- Log ou mensagem de erro pode ser adicionado aqui
+        END CATCH;
+
+        FETCH NEXT FROM CategoryCursor INTO @CategoryID;
+    END;
+
+    CLOSE CategoryCursor;
+    DEALLOCATE CategoryCursor;
+END;
+```
+
+---
+
+### **3. Exclusão em Cascata com Cursores**
+```sql
+CREATE PROCEDURE DeleteOldOrders
+AS
+BEGIN
+    DECLARE @OrderID INT;
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        DECLARE OrderCursor CURSOR FOR
+        SELECT OrderID FROM Orders WHERE OrderDate < DATEADD(YEAR, -5, GETDATE());
+
+        OPEN OrderCursor;
+        FETCH NEXT FROM OrderCursor INTO @OrderID;
+
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            DELETE FROM [Order Details] WHERE OrderID = @OrderID;
+            DELETE FROM Orders WHERE OrderID = @OrderID;
+
+            FETCH NEXT FROM OrderCursor INTO @OrderID;
+        END;
+
+        CLOSE OrderCursor;
+        DEALLOCATE OrderCursor;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+
+        IF CURSOR_STATUS('GLOBAL', 'OrderCursor') >= 0
+        BEGIN
+            CLOSE OrderCursor;
+            DEALLOCATE OrderCursor;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+```
+
+---
+
+### **4. Transferência de Dados entre Tabelas**
+```sql
+CREATE PROCEDURE ArchiveInactiveCustomers
+AS
+BEGIN
+    DECLARE @CustomerID NVARCHAR(5);
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        DECLARE CustomerCursor CURSOR FOR
+        SELECT CustomerID FROM Customers
+        WHERE CustomerID NOT IN (
+            SELECT DISTINCT CustomerID FROM Orders
+            WHERE OrderDate >= DATEADD(YEAR, -3, GETDATE())
+        );
+
+        OPEN CustomerCursor;
+        FETCH NEXT FROM CustomerCursor INTO @CustomerID;
+
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            INSERT INTO ArchivedCustomers (CustomerID, CompanyName, ContactName)
+            SELECT CustomerID, CompanyName, ContactName FROM Customers WHERE CustomerID = @CustomerID;
+
+            DELETE FROM Customers WHERE CustomerID = @CustomerID;
+
+            FETCH NEXT FROM CustomerCursor INTO @CustomerID;
+        END;
+
+        CLOSE CustomerCursor;
+        DEALLOCATE CustomerCursor;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+
+        IF CURSOR_STATUS('GLOBAL', 'CustomerCursor') >= 0
+        BEGIN
+            CLOSE CustomerCursor;
+            DEALLOCATE CustomerCursor;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+```
+
+---
+
+### **5. Gerenciamento de Estoque com Cursores**
+```sql
+CREATE PROCEDURE RestockLowStockProducts
+AS
+BEGIN
+    DECLARE @ProductID INT, @UnitsInStock INT;
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        DECLARE StockCursor CURSOR FOR
+        SELECT ProductID, UnitsInStock FROM Products WHERE UnitsInStock < 10;
+
+        OPEN StockCursor;
+        FETCH NEXT FROM StockCursor INTO @ProductID, @UnitsInStock;
+
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            INSERT INTO RestockLog (ProductID, QuantityNeeded, RestockDate)
+            VALUES (@ProductID, 20 - @UnitsInStock, GETDATE());
+
+            UPDATE Products
+            SET UnitsInStock = 20
+            WHERE ProductID = @ProductID;
+
+            FETCH NEXT FROM StockCursor INTO @ProductID, @UnitsInStock;
+        END;
+
+        CLOSE StockCursor;
+        DEALLOCATE StockCursor;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+
+        IF CURSOR_STATUS('GLOBAL', 'StockCursor') >= 0
+        BEGIN
+            CLOSE StockCursor;
+            DEALLOCATE StockCursor;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+```
+
+---
+
+
+Aqui estão as **soluções completas para os exercícios 6 a 10**:
+
+---
+
+### **6. Atualização de Fretes por Regiões**
+```sql
+CREATE PROCEDURE UpdateFreightByRegion
+AS
+BEGIN
+    DECLARE @Region NVARCHAR(50), @OrderID INT, @NewFreight DECIMAL(10, 2);
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        DECLARE RegionCursor CURSOR FOR
+        SELECT DISTINCT ShipRegion FROM Orders WHERE ShipRegion IS NOT NULL;
+
+        OPEN RegionCursor;
+        FETCH NEXT FROM RegionCursor INTO @Region;
+
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            DECLARE OrderCursor CURSOR FOR
+            SELECT OrderID, Freight FROM Orders WHERE ShipRegion = @Region;
+
+            OPEN OrderCursor;
+            FETCH NEXT FROM OrderCursor INTO @OrderID, @NewFreight;
+
+            WHILE @@FETCH_STATUS = 0
+            BEGIN
+                -- Exemplo de lógica para ajuste de frete
+                SET @NewFreight = @NewFreight * 1.10; 
+
+                UPDATE Orders
+                SET Freight = @NewFreight
+                WHERE OrderID = @OrderID;
+
+                FETCH NEXT FROM OrderCursor INTO @OrderID, @NewFreight;
+            END;
+
+            CLOSE OrderCursor;
+            DEALLOCATE OrderCursor;
+
+            FETCH NEXT FROM RegionCursor INTO @Region;
+        END;
+
+        CLOSE RegionCursor;
+        DEALLOCATE RegionCursor;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+
+        IF CURSOR_STATUS('GLOBAL', 'RegionCursor') >= 0
+        BEGIN
+            CLOSE RegionCursor;
+            DEALLOCATE RegionCursor;
+        END;
+
+        IF CURSOR_STATUS('GLOBAL', 'OrderCursor') >= 0
+        BEGIN
+            CLOSE OrderCursor;
+            DEALLOCATE OrderCursor;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+```
+
+---
+
+### **7. Reativação de Produtos Descontinuados**
+```sql
+CREATE PROCEDURE ReactivateDiscontinuedProducts
+AS
+BEGIN
+    DECLARE @ProductID INT;
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        DECLARE ProductCursor CURSOR FOR
+        SELECT ProductID
+        FROM Products
+        WHERE Discontinued = 1 AND ProductID IN (
+            SELECT DISTINCT ProductID
+            FROM [Order Details] od
+            JOIN Orders o ON od.OrderID = o.OrderID
+            WHERE o.OrderDate >= DATEADD(YEAR, -2, GETDATE())
+        );
+
+        OPEN ProductCursor;
+        FETCH NEXT FROM ProductCursor INTO @ProductID;
+
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            UPDATE Products
+            SET Discontinued = 0
+            WHERE ProductID = @ProductID;
+
+            FETCH NEXT FROM ProductCursor INTO @ProductID;
+        END;
+
+        CLOSE ProductCursor;
+        DEALLOCATE ProductCursor;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+
+        IF CURSOR_STATUS('GLOBAL', 'ProductCursor') >= 0
+        BEGIN
+            CLOSE ProductCursor;
+            DEALLOCATE ProductCursor;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+```
+
+---
+
+### **8. Controle de Estoque por Pedido**
+```sql
+CREATE PROCEDURE AdjustStockByOrder
+    @OrderID INT
+AS
+BEGIN
+    DECLARE @ProductID INT, @Quantity INT;
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        DECLARE StockCursor CURSOR FOR
+        SELECT ProductID, Quantity
+        FROM [Order Details]
+        WHERE OrderID = @OrderID;
+
+        OPEN StockCursor;
+        FETCH NEXT FROM StockCursor INTO @ProductID, @Quantity;
+
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            UPDATE Products
+            SET UnitsInStock = UnitsInStock - @Quantity
+            WHERE ProductID = @ProductID;
+
+            INSERT INTO StockAdjustments (ProductID, QuantityAdjusted, AdjustmentDate)
+            VALUES (@ProductID, -@Quantity, GETDATE());
+
+            FETCH NEXT FROM StockCursor INTO @ProductID, @Quantity;
+        END;
+
+        CLOSE StockCursor;
+        DEALLOCATE StockCursor;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+
+        IF CURSOR_STATUS('GLOBAL', 'StockCursor') >= 0
+        BEGIN
+            CLOSE StockCursor;
+            DEALLOCATE StockCursor;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+```
+
+---
+
+### **9. Cálculo de Receita por Categoria**
+```sql
+CREATE PROCEDURE CalculateRevenueByCategory
+AS
+BEGIN
+    DECLARE @CategoryID INT, @Revenue DECIMAL(18, 2);
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        DECLARE CategoryCursor CURSOR FOR
+        SELECT CategoryID FROM Categories;
+
+        OPEN CategoryCursor;
+        FETCH NEXT FROM CategoryCursor INTO @CategoryID;
+
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            SELECT @Revenue = SUM(od.UnitPrice * od.Quantity * (1 - od.Discount))
+            FROM [Order Details] od
+            JOIN Products p ON od.ProductID = p.ProductID
+            WHERE p.CategoryID = @CategoryID;
+
+            INSERT INTO CategoryRevenue (CategoryID, Revenue, CalculatedDate)
+            VALUES (@CategoryID, @Revenue, GETDATE());
+
+            FETCH NEXT FROM CategoryCursor INTO @CategoryID;
+        END;
+
+        CLOSE CategoryCursor;
+        DEALLOCATE CategoryCursor;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+
+        IF CURSOR_STATUS('GLOBAL', 'CategoryCursor') >= 0
+        BEGIN
+            CLOSE CategoryCursor;
+            DEALLOCATE CategoryCursor;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+```
+
+---
+
+### **10. Migração de Pedidos para Arquivo**
+```sql
+CREATE PROCEDURE ArchiveOldOrders
+AS
+BEGIN
+    DECLARE @OrderID INT;
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        DECLARE OrderCursor CURSOR FOR
+        SELECT OrderID FROM Orders WHERE OrderDate < DATEADD(YEAR, -10, GETDATE());
+
+        OPEN OrderCursor;
+        FETCH NEXT FROM OrderCursor INTO @OrderID;
+
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            INSERT INTO ArchivedOrders (OrderID, CustomerID, OrderDate, ShipAddress)
+            SELECT OrderID, CustomerID, OrderDate, ShipAddress
+            FROM Orders
+            WHERE OrderID = @OrderID;
+
+            INSERT INTO ArchivedOrderDetails (OrderID, ProductID, Quantity, UnitPrice, Discount)
+            SELECT OrderID, ProductID, Quantity, UnitPrice, Discount
+            FROM [Order Details]
+            WHERE OrderID = @OrderID;
+
+            DELETE FROM [Order Details] WHERE OrderID = @OrderID;
+            DELETE FROM Orders WHERE OrderID = @OrderID;
+
+            FETCH NEXT FROM OrderCursor INTO @OrderID;
+        END;
+
+        CLOSE OrderCursor;
+        DEALLOCATE OrderCursor;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+
+        IF CURSOR_STATUS('GLOBAL', 'OrderCursor') >= 0
+        BEGIN
+            CLOSE OrderCursor;
+            DEALLOCATE OrderCursor;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+```
+
