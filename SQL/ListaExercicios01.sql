@@ -269,3 +269,106 @@ SELECT p.product_name
 -- 26
 ---------------------------------------------------------------------------------------------------------------------------
 
+  SELECT o.order_id                                              AS "Pedido",
+         SUM(od.quantity)                                        AS "Quantidade",
+         CAST(SUM(od.unit_price * od.quantity) AS NUMERIC(10,2)) AS "ValorTotal"
+    FROM orders o
+    JOIN order_details od ON od.order_id = o.order_id
+GROUP BY o.order_id
+ORDER BY o.order_id ASC
+
+---------------------------------------------------------------------------------------------------------------------------
+-- 27
+---------------------------------------------------------------------------------------------------------------------------
+
+SELECT product_name                                                  AS "Produto", 
+       CAST(unit_price AS NUMERIC(10,2))                             AS "PrecoUnitario",
+       CAST((SELECT AVG(unit_price) FROM products) AS NUMERIC(10,2)) AS "PrecoMedio"
+  FROM products
+ WHERE unit_price > (SELECT AVG(unit_price)
+                       FROM products)
+
+---------------------------------------------------------------------------------------------------------------------------
+-- 28
+---------------------------------------------------------------------------------------------------------------------------
+
+SELECT product_name                                                  AS "Produto", 
+       CAST(unit_price AS NUMERIC(10,2))                             AS "PrecoUnitario",
+       CAST((SELECT AVG(unit_price) FROM products) AS NUMERIC(10,2)) AS "PrecoMedio"
+  FROM products
+ WHERE unit_price > (SELECT AVG(unit_price)
+                       FROM products
+                      WHERE category_id = (  SELECT category_id 
+                                               FROM products 
+                                           ORDER BY unit_price DESC 
+                                              LIMIT 1))
+
+---------------------------------------------------------------------------------------------------------------------------
+-- 29
+---------------------------------------------------------------------------------------------------------------------------
+
+SELECT order_id
+  FROM orders
+ WHERE ship_country = 'Brazil'
+
+---------------------------------------------------------------------------------------------------------------------------
+-- 30
+---------------------------------------------------------------------------------------------------------------------------
+
+  SELECT p.product_name
+    FROM products      p
+    JOIN order_details od ON od.product_id = p.product_id
+    JOIN orders        o  ON o.order_id = od.order_id
+   WHERE o.ship_country = 'Brazil'
+ORDER BY o.freight DESC
+LIMIT 1
+
+---------------------------------------------------------------------------------------------------------------------------
+-- 31
+---------------------------------------------------------------------------------------------------------------------------
+
+  SELECT c.category_id, 
+         c.category_name, 
+         COUNT(p.product_id) AS TotalProdutos
+    FROM categories c
+    JOIN products   p ON p.category_id = c.category_id
+GROUP BY c.category_id, c.category_name
+  HAVING COUNT(p.product_id) > (SELECT COUNT(*)
+                                 FROM products
+                                WHERE category_id = (  SELECT category_id
+                                                         FROM products
+                                                     ORDER BY unit_price ASC
+                                                        LIMIT 1)
+                               )
+
+---------------------------------------------------------------------------------------------------------------------------
+-- 32
+---------------------------------------------------------------------------------------------------------------------------
+
+SELECT first_name, 
+       last_name
+  FROM employees 
+ WHERE reports_to = (SELECT reports_to
+                       FROM employees
+                      WHERE employee_id = 6)
+
+---------------------------------------------------------------------------------------------------------------------------
+-- 33
+---------------------------------------------------------------------------------------------------------------------------
+
+SELECT e2.first_name,
+       e2.last_name
+  FROM employees e1
+  JOIN employees e2 ON e1.reports_to = e2.employee_id
+ WHERE e1.employee_id = 6
+
+---------------------------------------------------------------------------------------------------------------------------
+-- 34
+---------------------------------------------------------------------------------------------------------------------------
+
+   SELECT c.category_id, 
+          c.category_name,
+          COUNT(p.product_id) AS Qtde
+     FROM categories c
+LEFT JOIN products   p ON p.category_id = c.category_id
+ GROUP BY c.category_id, c.category_name
