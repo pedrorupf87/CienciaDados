@@ -321,3 +321,109 @@ END
 -- 11
 ----------------------------------------------------------------------------------------------------------------------------------------------
 
+CREATE OR REPLACE PROCEDURE aumentar_precos_por_categoria(p_percentual NUMERIC)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_categoria RECORD;
+BEGIN
+    IF p_percentual IS NULL THEN
+        RAISE EXCEPTION 'O percentual não pode ser nulo';
+    END IF;
+
+    FOR v_categoria IN
+        SELECT category_id, 
+               category_name
+          FROM categories
+    LOOP
+        RAISE NOTICE 'Atualizando categoria: %', v_categoria.category_name;
+
+        -- Atualiza os produtos da categoria atual
+        UPDATE products
+           SET unit_price = unit_price * (1 + p_percentual / 100.0)
+         WHERE category_id = v_categoria.category_id;
+    END LOOP;
+
+    RAISE NOTICE 'Atualização concluída com sucesso.';
+END;
+$$;
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+-- 12
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS temp12;
+CREATE TEMP TABLE temp12
+(
+    product_name  TEXT,
+    supplier_id   INT,
+    category_name TEXT,
+    unit_price    NUMERIC
+);
+
+INSERT INTO temp12 VALUES
+('Chá Premium', 1, 'Beverages', 18.50),
+('Biscoito Integral', 2, 'Confections', 12.00),
+('Suco Natural', 3, 'Beverages', 9.90);
+
+CREATE OR REPLACE PROCEDURE inserir_produtos_com_cursor()
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_produto      RECORD;
+    v_categoria_id INT;
+    v_cursor CURSOR FOR
+        SELECT product_name, 
+               supplier_id, 
+               category_name, 
+               unit_price
+          FROM temp12;
+BEGIN
+    OPEN v_cursor;
+
+    LOOP
+        FETCH v_cursor INTO v_produto;
+        EXIT WHEN NOT FOUND;
+
+        -- Busca o ID da categoria pelo nome
+        SELECT category_id
+          INTO v_categoria_id
+          FROM categories
+         WHERE category_name = v_produto.category_name;
+
+        -- Validação: se não encontrar categoria, pula o registro
+        IF v_categoria_id IS NULL THEN
+            RAISE NOTICE 'Categoria não encontrada para produto: %', v_produto.product_name;
+            CONTINUE;
+        END IF;
+
+        -- Insere o produto
+        INSERT INTO products
+        (
+            product_name,
+            supplier_id,
+            category_id,
+            unit_price,
+            discontinued
+        )
+        VALUES
+        (
+            v_produto.product_name,
+            v_produto.supplier_id,
+            v_categoria_id,
+            v_produto.unit_price,
+            0
+        );
+
+        RAISE NOTICE 'Produto inserido: %', v_produto.product_name;
+    END LOOP;
+
+    CLOSE v_cursor;
+
+    RAISE NOTICE 'Processo concluído.';
+END;
+$$;
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+-- 13
+----------------------------------------------------------------------------------------------------------------------------------------------
