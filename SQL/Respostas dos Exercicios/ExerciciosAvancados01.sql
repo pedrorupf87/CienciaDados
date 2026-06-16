@@ -7,7 +7,8 @@
 -- 01
 ----------------------------------------------------------------------------------------------------------------------------------------------
 
-CREATE TEMP TABLE IF NOT EXISTS temp_Produtos01
+DROP TABLE IF EXISTS temp_Produtos01;
+CREATE TEMP TABLE temp_Produtos01
 (
     ProductName VARCHAR(50),
     SupplierId  INT,
@@ -25,7 +26,8 @@ SELECT * FROM temp_Produtos01;
 -- 02
 ----------------------------------------------------------------------------------------------------------------------------------------------
 
-CREATE TEMP TABLE IF NOT EXISTS temp_Produtos02
+DROP TABLE IF EXISTS temp_Produtos02;
+CREATE TEMP TABLE temp_Produtos02
 (
     product_id        SMALLINT NOT NULL,
     product_name      VARCHAR(40),
@@ -53,7 +55,8 @@ UPDATE temp_Produtos02 t
 -- 03
 ----------------------------------------------------------------------------------------------------------------------------------------------
 
-CREATE TEMP TABLE IF NOT EXISTS temp_OrderDetails03
+DROP TABLE IF EXISTS temp_OrderDetails03;
+CREATE TEMP TABLE temp_OrderDetails03
 (
     order_id   SMALLINT NOT NULL,
     product_id SMALLINT NOT NULL,
@@ -73,7 +76,8 @@ SELECT od.*
 -- 04
 ----------------------------------------------------------------------------------------------------------------------------------------------
 
-CREATE TEMP TABLE IF NOT EXISTS temp_Orders04
+DROP TABLE IF EXISTS temp_Orders04;
+CREATE TEMP TABLE temp_Orders04
 (
     order_id         SMALLINT NOT NULL,
     customer_id      VARCHAR(5),
@@ -105,7 +109,8 @@ SELECT * FROM temp_Orders04;
 -- 05
 ----------------------------------------------------------------------------------------------------------------------------------------------
 
-CREATE TEMP TABLE IF NOT EXISTS temp_OrderDetails05
+DROP TABLE IF EXISTS temp_OrderDetails05;
+CREATE TEMP TABLE temp_OrderDetails05
 (
     order_id   SMALLINT NOT NULL,
     product_id SMALLINT NOT NULL,
@@ -138,7 +143,8 @@ SELECT * FROM temp_OrderDetails05
 -- 06
 ----------------------------------------------------------------------------------------------------------------------------------------------
 
-CREATE TEMP TABLE IF NOT EXISTS temp_Produtos06
+DROP TABLE IF EXISTS temp_Produtos06;
+CREATE TEMP TABLE temp_Produtos06
 (
     product_id        SMALLINT NOT NULL,
     product_name      VARCHAR(40),
@@ -249,5 +255,69 @@ SELECT * FROM temp_Customers08;
 
 ----------------------------------------------------------------------------------------------------------------------------------------------
 -- 09
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS temp_Suppliers09;
+CREATE TEMP TABLE temp_Suppliers09
+(
+    supplier_id   SMALLINT NOT NULL,
+    company_name  VARCHAR(40) NOT NULL,
+    contact_name  VARCHAR(30),
+    contact_title VARCHAR(30),
+    "address"     VARCHAR(60),
+    city          VARCHAR(15),
+    region        VARCHAR(15),
+    postal_code   VARCHAR(10),
+    country       VARCHAR(15),
+    phone         VARCHAR(24),
+    fax           VARCHAR(24),
+    homepage      TEXT
+);
+
+INSERT INTO temp_Suppliers09
+SELECT * 
+  FROM suppliers;
+
+
+UPDATE temp_Suppliers09 s
+SET company_name = '[INATIVO] ' || s.company_name
+WHERE NOT EXISTS (SELECT 1
+                    FROM products p
+                   WHERE p.supplier_id = s.supplier_id
+                     AND p.discontinued = 0);
+
+  SELECT * 
+    FROM temp_Suppliers09
+ORDER BY supplier_id ASC;
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+-- 10
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS temp_OrderDetails10;
+CREATE TEMP TABLE temp_OrderDetails10
+(
+    order_id   SMALLINT NOT NULL,
+    product_id SMALLINT NOT NULL,
+    unit_price REAL NOT NULL,
+    quantity   SMALLINT NOT NULL,
+    discount   REAL NOT NULL
+);
+
+CREATE TRIGGER trg_InsertOrderDetails10
+ON orders
+AFTER INSERT
+AS
+BEGIN
+    INSERT INTO order_details
+    SELECT i.order_id,
+           1,
+           5,
+           (SELECT unit_price FROM products WHERE product_id = 1)
+      FROM inserted i
+END
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+-- 11
 ----------------------------------------------------------------------------------------------------------------------------------------------
 
