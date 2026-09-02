@@ -1,136 +1,89 @@
+### **1–10: Manipulação de dados com CTE**
 
-### 1–10: Introdução às Funções de Janela Básicas
-1. Liste os funcionários com o total acumulado de pedidos classificados por data.
-2. Calcule a média móvel dos valores dos pedidos nos últimos 3 pedidos para cada cliente.
-3. Exiba os produtos com a soma acumulada de vendas, ordenados por categoria.
-4. Liste os produtos com o percentual de contribuição em vendas dentro de sua categoria.
-5. Calcule o número de pedidos realizados por cada cliente usando a função `COUNT()`.
-6. Calcule a data do primeiro pedido de cada cliente usando `MIN()` com janela.
-7. Liste os pedidos com o valor médio de pedido por cliente usando `AVG()`.
-8. Determine a diferença entre o valor de um pedido e o valor médio dos pedidos daquele cliente.
-9. Exiba os produtos com o ranking de vendas dentro de cada categoria usando `RANK()`.
-10. Liste os pedidos com o total acumulado diário para cada cliente.
-
----
-
-### 11–20: Ordenação e Particionamento
-11. Liste os produtos mais vendidos em cada categoria usando `DENSE_RANK()`.
-12. Calcule a diferença entre o maior e o menor valor de pedido por cliente.
-13. Liste os clientes com a média acumulada de pedidos, ordenados por data.
-14. Exiba os funcionários com a soma acumulada de vendas, particionados por região.
-15. Liste os pedidos com a classificação reversa (`DESC`) por valor de pedido usando `ROW_NUMBER()`.
-16. Liste os 3 produtos mais vendidos em cada categoria usando `TOP` com janela.
-17. Calcule a diferença percentual entre vendas de meses consecutivos.
-18. Exiba os clientes com o ranking de pedidos feitos em cada ano.
-19. Liste os funcionários com o total acumulado de vendas por ano, usando `PARTITION BY YEAR(OrderDate)`.
-20. Calcule a média móvel de vendas para cada produto nos últimos 5 meses.
+1. Crie uma CTE para calcular o valor total de vendas por cliente e liste apenas os clientes com mais de 10 pedidos.
+2. Use uma CTE para calcular o preço total de cada pedido (soma de `UnitPrice` * `Quantity`) e liste os 5 pedidos mais caros.
+3. Construa uma CTE que retorna o ranking de categorias pelo total de vendas e mostre o top 3.
+4. Use uma CTE para calcular a média de vendas por produto em cada categoria.
+5. Crie uma CTE que retorne os funcionários que tiveram vendas acima da média total do banco.
+6. Utilize uma CTE para listar os produtos que foram vendidos em pelo menos 3 países diferentes.
+7. Desenvolva uma CTE para identificar os clientes que realizaram pedidos com frete acima da média.
+8. Construa uma CTE para calcular a soma acumulada do valor de vendas por funcionário.
+9. Use uma CTE para identificar os fornecedores cujos produtos tiveram vendas acima de um valor específico.
+10. Crie uma CTE que lista os 10 produtos mais vendidos em termos de quantidade total.
 
 ---
 
-### 21–30: Aplicações Avançadas com `LAG` e `LEAD`
-21. Identifique o cliente que fez o próximo pedido usando `LEAD()`.
-22. Determine a diferença entre o valor de um pedido e o próximo pedido do mesmo cliente.
-23. Liste os produtos com o estoque atual e o estoque do mês anterior usando `LAG()`.
-24. Calcule a diferença entre o preço atual e o preço anterior de cada produto.
-25. Liste os pedidos com o próximo valor de pedido do mesmo cliente.
-26. Calcule o crescimento percentual do valor de vendas mês a mês.
-27. Exiba os clientes com o valor do pedido anterior e a diferença para o pedido atual.
-28. Liste os produtos com a próxima data de envio programada.
-29. Calcule o tempo médio entre os pedidos usando `DATEDIFF()` com funções de janela.
-30. Determine os pedidos em que o valor é maior que o pedido anterior.
+### **11–20: Hierarquia e recursividade com CTE**
+
+11. Use uma CTE recursiva para listar a hierarquia de categorias e subcategorias (simule uma estrutura hierárquica).
+12. Construa uma CTE recursiva para calcular o número de níveis na hierarquia de vendas por região.
+13. Crie uma CTE recursiva que identifica os fornecedores associados a cada categoria e subcategoria.
+14. Utilize uma CTE recursiva para calcular o total acumulado de vendas por ano, começando de 1996.
+15. Desenvolva uma CTE recursiva para calcular o total de produtos vendidos por região e sub-região.
+16. Crie uma CTE recursiva para identificar todos os clientes que têm pelo menos um pedido relacionado a um produto específico.
+17. Use uma CTE recursiva para calcular o número total de produtos vendidos por cada funcionário.
+18. Construa uma CTE recursiva para listar a hierarquia de produtos com base em categorias e subcategorias.
+19. Utilize uma CTE recursiva para calcular o total acumulado de vendas de cada fornecedor, organizando por país.
+20. Desenvolva uma CTE recursiva que retorna a hierarquia de vendas, partindo do maior pedido até o menor.
 
 ---
 
-### 31–40: Análises Temporais
-31. Calcule a média móvel de vendas nos últimos 12 meses.
-32. Liste os funcionários com o total de vendas no trimestre atual e anterior.
-33. Calcule a soma acumulada de pedidos em um intervalo de 30 dias.
-34. Determine o primeiro e o último pedido de cada cliente por ano.
-35. Liste os produtos com a média de vendas por estação (primavera, verão, etc.).
-36. Calcule o total acumulado de vendas em um intervalo deslizante de 7 dias.
-37. Liste os pedidos com o ranking de vendas semanais por cliente.
-38. Exiba os funcionários com a soma acumulada de vendas no trimestre atual.
-39. Calcule o valor total de vendas por trimestre em comparação ao trimestre anterior.
-40. Liste os pedidos com o total acumulado de vendas mensais.
+### **21–30: Análise de dados com CTE**
+
+21. Use uma CTE para calcular o percentual de participação de cada funcionário no total de vendas.
+22. Crie uma CTE que retorna a variação mensal das vendas para cada produto.
+23. Utilize uma CTE para identificar os produtos cujo preço está abaixo do preço médio da categoria.
+24. Construa uma CTE para calcular o tempo médio entre pedidos para cada cliente.
+25. Use uma CTE para listar os clientes com pedidos consecutivos cujo intervalo foi superior a 30 dias.
+26. Desenvolva uma CTE que identifica os produtos que tiveram vendas acumuladas superiores a $10,000.
+27. Crie uma CTE para calcular o percentual de crescimento das vendas mês a mês.
+28. Use uma CTE para calcular o número médio de itens vendidos por pedido para cada categoria.
+29. Construa uma CTE que lista os funcionários com vendas acima da média por região.
+30. Utilize uma CTE para calcular o total de vendas por trimestre para cada categoria.
 
 ---
 
-### 41–50: Uso de Funções Percentuais
-41. Calcule o percentil de cada pedido em relação às vendas totais.
-42. Liste os produtos que estão acima do percentil 90% de vendas em sua categoria.
-43. Exiba os funcionários com o percentil de contribuição em vendas por região.
-44. Calcule a diferença percentual entre os dois pedidos mais altos de cada cliente.
-45. Liste os pedidos com o ranking percentual (`PERCENT_RANK()`) por cliente.
-46. Calcule o valor médio de pedidos acima do percentil 50% por categoria.
-47. Exiba os produtos com a classificação percentual (`CUME_DIST()`) em vendas.
-48. Liste os funcionários com as vendas no top 10% de sua região.
-49. Calcule a média de vendas de pedidos abaixo do percentil 25%.
-50. Liste os pedidos com o percentual de contribuição em relação ao cliente.
+### **31–40: Combinações de CTEs**
+
+31. Use múltiplas CTEs para calcular o total de vendas por funcionário e identificar o funcionário com maior crescimento nas vendas.
+32. Crie duas CTEs para calcular a média de vendas por produto e listar os produtos acima da média.
+33. Utilize múltiplas CTEs para calcular a participação de cada país no total de vendas e listar os 5 países mais lucrativos.
+34. Construa duas CTEs: uma para calcular a média de pedidos por cliente e outra para identificar os clientes com pedidos acima da média.
+35. Use múltiplas CTEs para identificar os produtos mais vendidos por fornecedor e calcular o percentual de participação de cada fornecedor.
+36. Desenvolva múltiplas CTEs para calcular o número de pedidos por mês e a variação mensal.
+37. Crie duas CTEs: uma para calcular a soma acumulada de vendas por funcionário e outra para identificar os funcionários com maior crescimento.
+38. Use múltiplas CTEs para calcular o ranking de vendas por categoria e listar as categorias que mais contribuíram para o faturamento.
+39. Construa duas CTEs: uma para calcular o frete médio por pedido e outra para identificar os pedidos com frete acima da média.
+40. Utilize múltiplas CTEs para calcular a soma acumulada de vendas por cliente e listar os clientes mais lucrativos.
 
 ---
 
-### 51–60: Operações com Subconjuntos
-51. Liste os produtos com o valor de vendas acumulado dentro do top 10%.
-52. Exiba os clientes com a soma acumulada de pedidos no trimestre atual.
-53. Calcule o total de pedidos acima da média por cliente.
-54. Determine o ranking de produtos vendidos apenas na categoria "Beverages".
-55. Liste os pedidos de clientes que compraram mais de 5 produtos.
-56. Calcule a soma acumulada de vendas dentro do top 3 clientes de cada região.
-57. Liste os produtos mais vendidos no último mês de cada ano.
-58. Calcule a média de vendas para os 5 produtos mais vendidos em cada categoria.
-59. Liste os funcionários com o maior total de vendas em um ano específico.
-60. Calcule o valor acumulado de pedidos apenas para clientes VIP.
+### **41–50: Transformações e otimizações com CTE**
+
+41. Use uma CTE para calcular o total de frete por região e ordenar as regiões por valor total.
+42. Crie uma CTE para listar os produtos que nunca foram vendidos.
+43. Utilize uma CTE para calcular a média móvel de vendas dos últimos 3 meses para cada produto.
+44. Construa uma CTE para identificar os meses em que as vendas foram abaixo da média.
+45. Use uma CTE para calcular o tempo médio de entrega por fornecedor.
+46. Desenvolva uma CTE para identificar os clientes que não fizeram pedidos no último ano.
+47. Crie uma CTE para listar os produtos com maior variação de preço ao longo do tempo.
+48. Utilize uma CTE para calcular o percentual de pedidos atrasados por região.
+49. Construa uma CTE para identificar os pedidos que tiveram o maior número de itens diferentes.
+50. Use uma CTE para calcular a soma acumulada de vendas por ano para cada funcionário.
 
 ---
 
-### 61–70: Trabalhando com Agrupamentos Complexos
-61. Liste os funcionários com a soma acumulada de vendas por região e ano.
-62. Calcule o total de vendas por cliente e produto usando funções de janela.
-63. Liste os pedidos com o total acumulado por mês e categoria.
-64. Calcule o percentual acumulado de vendas dentro de cada região.
-65. Liste os produtos com a média de vendas dentro de cada subcategoria.
-66. Determine os clientes com o maior crescimento percentual em vendas por ano.
-67. Liste os funcionários com o ranking de vendas dentro de sua categoria de produto.
-68. Exiba os pedidos com o total acumulado de vendas por trimestre e cliente.
-69. Calcule a média de vendas para os pedidos feitos no mesmo mês.
-70. Liste os produtos com o ranking de vendas acumulado dentro de sua região.
+### **51–60: Aplicações práticas e desafios com CTE**
 
----
-
-### 71–80: Aplicações com Combinações de Janela
-71. Liste os funcionários com a soma acumulada e a média móvel de vendas.
-72. Calcule o ranking de produtos dentro de um intervalo móvel de 6 meses.
-73. Liste os pedidos com a soma acumulada e o ranking por valor.
-74. Calcule o percentual acumulado e a média de vendas por categoria.
-75. Liste os produtos com a média móvel e o ranking dentro de sua categoria.
-76. Determine os clientes com o total acumulado de pedidos e a diferença percentual entre anos.
-77. Liste os funcionários com a média móvel trimestral de vendas e o ranking dentro da região.
-78. Calcule o percentual de contribuição de vendas acumuladas por cliente.
-79. Liste os pedidos com o valor acumulado e o ranking reverso por data.
-80. Determine os produtos com a soma acumulada e a média de vendas dentro de um intervalo de 90 dias.
-
----
-
-### 81–100: Cenários Reais
-81. Calcule a margem acumulada de lucro por produto e região.
-82. Liste os produtos com a soma acumulada de estoque dentro de cada categoria.
-83. Exiba os pedidos com a média móvel de valor dentro de um intervalo de 15 dias.
-84. Calcule o percentual acumulado de vendas por produto em um ano específico.
-85. Liste os funcionários com o ranking de vendas dentro de cada ano.
-86. Calcule a diferença acumulada entre pedidos consecutivos por cliente.
-87. Liste os produtos com a média de vendas acima do percentil 75% em sua categoria.
-88. Determine o primeiro pedido de cada cliente em um trimestre específico.
-89. Liste os funcionários com a soma acumulada de vendas e o ranking por mês.
-90. Calcule o crescimento percentual de vendas entre trimestres consecutivos.
-91. Liste os pedidos com o ranking de valor dentro de uma janela de 3 meses.
-92. Calcule a média de vendas para os 5 produtos mais vendidos por região.
-93. Liste os funcionários com o percentual acumulado de vendas em cada ano.
-94. Determine os produtos com a soma acumulada de vendas dentro de cada faixa de preço.
-95. Liste os pedidos com a média móvel e o ranking dentro de cada região.
-96. Calcule a média de vendas para pedidos realizados no mesmo dia da semana.
-97. Liste os clientes com a soma acumulada de pedidos no último trimestre.
-98. Determine os produtos com o valor acumulado e a média de vendas dentro de cada subcategoria.
-99. Liste os funcionários com o ranking e o percentual de vendas acumuladas por trimestre.
-100. Calcule o total acumulado e o percentual de crescimento em vendas dentro de cada categoria.
+51. Crie uma CTE para identificar os 5 produtos mais vendidos em cada categoria.
+52. Use uma CTE para calcular o total de vendas por cliente nos últimos 6 meses.
+53. Desenvolva uma CTE para listar os fornecedores com produtos nunca vendidos.
+54. Construa uma CTE para calcular o número de pedidos realizados em cada mês para os últimos 3 anos.
+55. Utilize uma CTE para identificar os clientes que nunca realizaram pedidos com frete acima da média.
+56. Crie uma CTE para calcular o valor total de vendas por funcionário em cada trimestre.
+57. Use uma CTE para listar os produtos com vendas abaixo de um determinado valor acumulado.
+58. Desenvolva uma CTE para calcular o número de produtos distintos vendidos por categoria.
+59. Construa uma CTE para identificar os clientes que têm pedidos com intervalo superior a 6 meses.
+60. Utilize uma CTE para listar os 3 produtos mais vendidos por fornecedor.
 
 ---
