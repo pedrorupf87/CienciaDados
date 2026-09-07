@@ -57,7 +57,7 @@ ORDER BY p.unit_price DESC
 ---------------------------------------------------------------------------------------------------------------------------
 
   SELECT p.product_id,
-         p.product_name,
+         p.product_name
     FROM products p
    WHERE p.unit_price BETWEEN 50 AND 200
 ORDER BY p.product_name ASC

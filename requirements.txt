@@ -1,23 +1,26 @@
 # Ambiente de análise e ciência de dados
 # Instalação:  python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+# Pisos definidos a partir do ambiente validado em 2026-09-07 (Python 3.12).
 
 # --- Núcleo de manipulação e análise ---
-numpy>=2.3
-pandas>=2.3
+numpy>=2.5
+pandas>=3.0            # Copy-on-Write é o padrão a partir da 3.0
 
 # --- Visualização ---
-matplotlib>=3.10
+matplotlib>=3.11
 seaborn>=0.13
 
 # --- Ambiente de trabalho ---
-jupyterlab>=4.5
+jupyterlab>=4.6
+ipykernel>=6.29
+python-dotenv>=1.0     # carrega o .env com a string de conexão
 
 # --- Acesso a dados ---
-duckdb>=1.1            # SQL analítico sobre CSV e Parquet, sem servidor
-psycopg[binary]>=3.2   # driver PostgreSQL
+duckdb>=1.5            # SQL analítico sobre CSV e Parquet, sem servidor
+psycopg[binary]>=3.3   # driver PostgreSQL
 SQLAlchemy>=2.0
 
 # --- Estatística e modelagem ---
-scipy>=1.14
-statsmodels>=0.14      # regressão com diagnóstico, para a Fase 3
-scikit-learn>=1.8      # para a Fase 4
+scipy>=1.18
+statsmodels>=0.15      # regressão com diagnóstico, para a Fase 3
+scikit-learn>=1.9      # para a Fase 4

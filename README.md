@@ -63,7 +63,7 @@ psql -d northwind -f estudos/sql/schema/northwind.sql
 Plano de doze meses, em sete fases. Cada fase fecha com um artefato commitado.
 
 - [x] **Fase 0 — Fundação do repositório.** Estrutura, `.gitignore`, ambiente reproduzível.
-- [ ] **Fase 1 — Python para dados.** pandas e NumPy, com as consultas do Northwind reescritas em pandas.
+- [ ] **Fase 1 — Python para dados.** pandas e NumPy, com as consultas do Northwind reescritas em pandas. → [plano e notebooks](estudos/python/)
 - [ ] **Fase 2 — Análise exploratória e visualização.** Projeto 1.
 - [ ] **Fase 3 — Estatística aplicada.** Executar em código a teoria já escrita em `estudos/matematica/`.
 - [ ] **Fase 4 — Machine learning supervisionado.** Projeto 2.
