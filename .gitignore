@@ -1,0 +1,61 @@
+# ---------- LaTeX ----------
+# Artefatos de compilação. Os .tex e os .pdf finais permanecem versionados.
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.idx
+*.ilg
+*.ind
+*.lof
+*.log
+*.lot
+*.nav
+*.out
+*.snm
+*.synctex.gz
+*.toc
+*.xdv
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.python-version
+
+# ---------- Jupyter ----------
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
+# ---------- Ferramentas ----------
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.ipython/
+
+# ---------- Dados ----------
+# Dados brutos não vão para o Git: são grandes, mudam e podem ser sensíveis.
+# Amostras pequenas ficam em dados/exemplo/, que é versionado.
+dados/bruto/*
+!dados/bruto/.gitkeep
+*.parquet
+*.db
+*.sqlite3
+
+# ---------- Segredos ----------
+.env
+.env.*
+!.env.example
+*.pem
+credentials.json
+
+# ---------- Sistema operacional e editores ----------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
