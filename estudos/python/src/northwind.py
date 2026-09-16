@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 RAIZ = Path(__file__).resolve().parents[3]
 
@@ -26,7 +26,8 @@ def engine():
 
 def consultar(sql: str) -> pd.DataFrame:
     """Executa SQL no Northwind e devolve o resultado como DataFrame."""
-    return pd.read_sql_query(sql, engine())
+    # text() evita que o driver interprete o % de um LIKE como marcador de parâmetro
+    return pd.read_sql_query(text(sql), engine())
 
 
 def tabela(nome: str) -> pd.DataFrame:

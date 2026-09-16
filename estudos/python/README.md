@@ -30,7 +30,7 @@ caminho mais curto disponível para você — e não existe para quem não tem s
 ## Entrega da fase
 
 O notebook [`04-northwind-sql-para-pandas.ipynb`](notebooks/04-northwind-sql-para-pandas.ipynb)
-completo, com pelo menos 30 consultas resolvidas nas duas linguagens e conferidas uma contra a outra.
+completo: 13 exemplos resolvidos e 50 exercícios traduzidos do SQL para pandas, conferidos um contra o outro.
 
 ## Preparando o ambiente
 
