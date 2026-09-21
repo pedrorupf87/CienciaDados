@@ -42,7 +42,7 @@ estar instalado — sem ele, `python3 -m venv` falha por falta do `ensurepip`:
 ```bash
 sudo apt install python3.12-venv
 
-cd ~/Documentos/CienciaDados
+cd ~/CienciaDados
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -67,7 +67,7 @@ Se o banco `northwind` ainda **não** existir, crie e restaure:
 
 ```bash
 sudo -u postgres createdb --owner=PVIANA northwind
-psql -h localhost -U PVIANA -d northwind -f ~/Documentos/CienciaDados/estudos/sql/schema/northwind.sql
+psql -h localhost -U PVIANA -d northwind -f ~/CienciaDados/estudos/sql/schema/northwind.sql
 ```
 
 Se o banco **já existir** com as tabelas pertencendo ao `postgres`, não restaure de novo —

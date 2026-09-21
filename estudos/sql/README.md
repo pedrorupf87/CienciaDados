@@ -12,8 +12,9 @@ schema/       dump do Northwind para restaurar o banco
 ## Restaurando o banco
 
 ```bash
-createdb northwind
-psql -d northwind -f schema/northwind.sql
+sudo -u postgres createuser --createdb --pwprompt PVIANA   # papel da aplicação, com senha
+sudo -u postgres createdb --owner=PVIANA northwind
+psql -h localhost -U PVIANA -d northwind -f schema/northwind.sql
 ```
 
 ## Listas

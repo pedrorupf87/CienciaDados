@@ -39,7 +39,7 @@ limite, testes de hipótese, regressão linear e logística, séries temporais, 
 Desenvolvido em Ubuntu 24.04 LTS, com Python 3.12 e PostgreSQL 18.
 
 ```bash
-git clone https://github.com/<usuario>/CienciaDados.git
+git clone https://github.com/pedrorupf87/CienciaDados.git
 cd CienciaDados
 
 python3 -m venv .venv
@@ -52,8 +52,9 @@ jupyter lab
 Para reproduzir os exercícios de SQL, restaure o banco de exemplo:
 
 ```bash
-createdb northwind
-psql -d northwind -f estudos/sql/schema/northwind.sql
+sudo -u postgres createuser --createdb --pwprompt PVIANA   # papel da aplicação, com senha
+sudo -u postgres createdb --owner=PVIANA northwind
+psql -h localhost -U PVIANA -d northwind -f estudos/sql/schema/northwind.sql
 ```
 
 ---

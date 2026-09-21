@@ -20,5 +20,5 @@ fechar esse laço: para cada documento, um notebook que executa em Python a teor
 ## Compilando
 
 ```bash
-latexmk -pdf Estatistica1.tex
+pdflatex -synctex=1 -interaction=nonstopmode Estatistica1.tex
 ```
