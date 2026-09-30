@@ -31,7 +31,7 @@ A seção de limitações não é opcional. É ela que separa análise de opini�
 
 | # | Projeto | Fase | Situação |
 |---|---|---|---|
-| 01 | Análise exploratória | 2 | A definir |
+| 01 | [Internações hospitalares do SUS](01-eda-internacoes-sus/) | 2 | Em andamento |
 | 02 | Classificação supervisionada | 4 | A definir |
 | 03 | Pipeline analítico com dbt e Docker | 5 | A definir |
 | 04 | Projeto final de ponta a ponta | 6 | A definir |

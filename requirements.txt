@@ -16,6 +16,8 @@ ipykernel>=6.29
 python-dotenv>=1.0     # carrega o .env com a string de conexão
 
 # --- Acesso a dados ---
+pyarrow>=21            # Parquet
+pyreaddbc>=2.0         # leitura dos .dbc do DATASUS (Fase 2)
 duckdb>=1.5            # SQL analítico sobre CSV e Parquet, sem servidor
 psycopg[binary]>=3.3   # driver PostgreSQL
 SQLAlchemy>=2.0

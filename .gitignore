@@ -42,7 +42,10 @@ env/
 # Amostras pequenas ficam em dados/exemplo/, que é versionado.
 dados/bruto/*
 !dados/bruto/.gitkeep
+
+# Parquet não vai para o Git, exceto as amostras pequenas de dados/exemplo/
 *.parquet
+!dados/exemplo/*.parquet
 *.db
 *.sqlite3
 

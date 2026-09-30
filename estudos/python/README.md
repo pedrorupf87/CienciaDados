@@ -27,10 +27,16 @@ caminho mais curto disponível para você — e não existe para quem não tem s
 | 5 | **Ingestão e limpeza** — CSV, Excel, Parquet, datas, nulos, duplicatas, categóricos | Carregar um dataset externo sujo e deixá-lo analisável |
 | 6 | **Python e PostgreSQL** — SQLAlchemy, ler e escrever, e quando deixar o trabalho no banco | Um script que lê do Postgres, transforma e grava de volta |
 
-## Entrega da fase
+## Entrega da fase — concluída
 
 O notebook [`04-northwind-sql-para-pandas.ipynb`](notebooks/04-northwind-sql-para-pandas.ipynb)
-completo: 13 exemplos resolvidos e 50 exercícios traduzidos do SQL para pandas, conferidos um contra o outro.
+completo: 13 exemplos resolvidos e **50 exercícios** traduzidos do SQL para pandas, conferidos um
+contra o outro — 20 acima da meta de 30. A lista foi além dos fundamentos e cobre `pivot` e `melt`,
+média móvel, curva ABC, quartis com `NTILE`, análise de cesta de compras e segmentação RFM.
+
+Validação: todas as 50 produzem os mesmos valores que o SQL equivalente. Nove diferem apenas na
+ordem das linhas, por empate no `ORDER BY`, ausência de `ORDER BY` ou collation do banco — a seção
+*Quando a ordem diverge sem que haja erro*, no fim do notebook, documenta cada causa.
 
 ## Preparando o ambiente
 

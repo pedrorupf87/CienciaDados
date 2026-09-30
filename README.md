@@ -14,6 +14,7 @@ travessia dessa base para análise e ciência de dados, com **PostgreSQL** e **P
 | Diretório | O que contém |
 |---|---|
 | [`projetos/`](projetos/) | Projetos de ponta a ponta — pergunta de negócio, dados, análise e conclusão. **Comece por aqui.** |
+| [`projetos/01-eda-internacoes-sus/`](projetos/01-eda-internacoes-sus/) | Análise exploratória das internações hospitalares do SUS (SIH-SUS/DATASUS). |
 | [`estudos/sql/`](estudos/sql/) | Cerca de 11 mil linhas de SQL resolvido sobre o Northwind, do básico ao avançado. |
 | [`estudos/python/`](estudos/python/) | Notebooks de fundamentos e experimentos com a stack de dados. |
 | [`estudos/matematica/`](estudos/matematica/) | Notas próprias em LaTeX: estatística, regressão e séries temporais. |
@@ -64,8 +65,8 @@ psql -h localhost -U PVIANA -d northwind -f estudos/sql/schema/northwind.sql
 Plano de doze meses, em sete fases. Cada fase fecha com um artefato commitado.
 
 - [x] **Fase 0 — Fundação do repositório.** Estrutura, `.gitignore`, ambiente reproduzível.
-- [ ] **Fase 1 — Python para dados.** pandas e NumPy, com as consultas do Northwind reescritas em pandas. → [plano e notebooks](estudos/python/)
-- [ ] **Fase 2 — Análise exploratória e visualização.** Projeto 1.
+- [x] **Fase 1 — Python para dados.** 50 consultas do Northwind traduzidas para pandas e conferidas contra o banco. → [plano e notebooks](estudos/python/)
+- [ ] **Fase 2 — Análise exploratória e visualização.** → [Projeto 01: internações do SUS](projetos/01-eda-internacoes-sus/)
 - [ ] **Fase 3 — Estatística aplicada.** Executar em código a teoria já escrita em `estudos/matematica/`.
 - [ ] **Fase 4 — Machine learning supervisionado.** Projeto 2.
 - [ ] **Fase 5 — Engenharia analítica.** PostgreSQL, Docker e dbt. Projeto 3.
